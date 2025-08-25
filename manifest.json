@@ -1,0 +1,9 @@
+{
+  "id": "pandabridge",
+  "name": "Panda Bridge",
+  "version": "1.0.0",
+  "minAppVersion": "0.12.0",
+  "description": "Convert Markdown notes into Anki flashcards and sync locally.",
+  "author": "Team Super Panda",
+  "isDesktopOnly": true
+}
