@@ -96,12 +96,6 @@ Panda Bridge talks to AnkiConnect over HTTP (default `http://127.0.0.1:8765`). S
 
 By default the plugin connects to localhost only. If you point the plugin to a remote host you are responsible for securing that transport (for example using an SSH tunnel or VPN). This plugin collects no telemetry (see `PRIVACY.md`).
 
-## Support the project
-
-If this plugin helps you, you can support development here:
-
-https://buymeacoffee.com/teamsuperpanda
-
 ## License
 
 MIT — see `LICENSE`.
