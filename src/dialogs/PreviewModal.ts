@@ -47,31 +47,30 @@ export class PreviewModal extends Modal {
     const section = container.createDiv('panda-bridge-preview-section');
     const sectionHeader = section.createDiv('panda-bridge-section-header');
     const toggleIcon = sectionHeader.createSpan({ cls: 'panda-bridge-toggle-icon expanded' });
-    toggleIcon.innerHTML = '▼';
+    toggleIcon.textContent = '▼';
     sectionHeader.createSpan({
       text: `${title} (${cards.length})`,
       cls: 'panda-bridge-section-title',
     });
-    const cardsContainer = section.createDiv('panda-bridge-cards-container');
+    const cardsContainer = section.createDiv('panda-bridge-cards-container expanded');
     sectionHeader.onclick = () => {
       const isExpanded = toggleIcon.classList.contains('expanded');
       if (isExpanded) {
         toggleIcon.classList.remove('expanded');
-        toggleIcon.innerHTML = '▶';
-        cardsContainer.style.display = 'none';
+        toggleIcon.textContent = '▶';
+        cardsContainer.classList.remove('expanded');
+        cardsContainer.classList.add('collapsed');
       } else {
         toggleIcon.classList.add('expanded');
-        toggleIcon.innerHTML = '▼';
-        cardsContainer.style.display = 'block';
+        toggleIcon.textContent = '▼';
+        cardsContainer.classList.remove('collapsed');
+        cardsContainer.classList.add('expanded');
       }
     };
     cards.forEach((cardInfo, index) => {
       const cardElement = cardsContainer.createDiv(`panda-bridge-card ${type}`);
 
-      const cardHeader = cardElement.createDiv('panda-bridge-card-header');
-      cardHeader.style.display = 'flex';
-      cardHeader.style.flexDirection = 'column';
-      cardHeader.style.alignItems = 'flex-start';
+      const cardHeader = cardElement.createDiv('panda-bridge-card-header panda-bridge-card-header-stacked');
       cardHeader.createSpan({ text: `Card ${index + 1}`, cls: 'panda-bridge-card-number' });
       cardHeader.createSpan({ text: `Deck: ${cardInfo.deckName}`, cls: 'panda-bridge-card-deck' });
 

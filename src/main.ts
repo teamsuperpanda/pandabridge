@@ -25,7 +25,7 @@ export default class PandaBridgePlugin extends Plugin {
       }
     );
     ribbonIconEl.addClass(CSS_CLASSES.RIBBON);
-    ribbonIconEl.innerHTML = '🐼';
+    ribbonIconEl.textContent = '🐼';
     ribbonIconEl.setAttribute('aria-label', 'Panda Bridge Sync');
 
     this.addCommand({

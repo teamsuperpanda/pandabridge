@@ -3,6 +3,14 @@ import PandaBridgePlugin from '../main';
 import { SyncAnalysis, CardAction } from '../sync/types';
 import { PreviewModal } from './PreviewModal';
 
+// Interface to properly type the App's setting property
+interface AppWithSetting extends App {
+  setting: {
+    open(): void;
+    openTabById(id: string): void;
+  };
+}
+
 export class SyncModal extends Modal {
   plugin: PandaBridgePlugin;
   private syncAnalysis: SyncAnalysis | null = null;
@@ -27,14 +35,9 @@ export class SyncModal extends Modal {
 
     header.createEl('h2', { text: '🐼 Panda Bridge' });
 
-    const loadingOverlay = contentEl.createDiv('panda-bridge-spinner-overlay');
-    const loadingText = loadingOverlay.createDiv();
+    const loadingOverlay = contentEl.createDiv('panda-bridge-spinner-overlay panda-bridge-loading-overlay');
+    const loadingText = loadingOverlay.createDiv('panda-bridge-loading-text');
     loadingText.textContent = 'Loading...';
-
-    loadingText.style.marginTop = '48px';
-    loadingText.style.textAlign = 'center';
-    loadingOverlay.style.alignItems = 'flex-start';
-    loadingOverlay.style.justifyContent = 'center';
 
     await this.checkConnectionAndLoadAnalysis();
 
@@ -46,8 +49,7 @@ export class SyncModal extends Modal {
     this.renderSyncSummary(summaryContainer);
     const buttonContainer = contentEl.createDiv('panda-bridge-button-container');
     this.renderButtons(buttonContainer);
-    const resultContainer = contentEl.createDiv('panda-bridge-results');
-    resultContainer.style.display = 'none';
+    const resultContainer = contentEl.createDiv('panda-bridge-results hidden');
   }
 
   private async checkConnectionAndLoadAnalysis() {
@@ -185,9 +187,6 @@ export class SyncModal extends Modal {
       const msg = m.contentEl.createDiv('panda-bridge-delete-msg');
       msg.textContent = `This will delete ${count} cards from Anki that were removed from this note. Proceed?`;
       const btnRow = m.contentEl.createDiv('panda-bridge-button-row');
-      btnRow.style.display = 'flex';
-      btnRow.style.justifyContent = 'center';
-      btnRow.style.gap = '10px';
 
       const cancel = btnRow.createEl('button', {
         cls: 'panda-bridge-btn panda-bridge-btn-tertiary',
@@ -257,10 +256,11 @@ export class SyncModal extends Modal {
         '.panda-bridge-button-container'
       ) as HTMLElement;
       const resultContainer = this.contentEl.querySelector('.panda-bridge-results') as HTMLElement;
-      if (summaryContainer) summaryContainer.style.display = 'none';
-      if (buttonContainer) buttonContainer.style.display = 'none';
+      if (summaryContainer) summaryContainer.classList.add('hidden');
+      if (buttonContainer) buttonContainer.classList.add('hidden');
       if (resultContainer) {
-        resultContainer.style.display = 'block';
+        resultContainer.classList.remove('hidden');
+        resultContainer.classList.add('visible');
         resultContainer.empty();
         const loadingList = resultContainer.createDiv('panda-bridge-results-list');
         const loadingItem = loadingList.createDiv('panda-bridge-result-item');
@@ -272,7 +272,8 @@ export class SyncModal extends Modal {
       const finalResultContainer = this.contentEl.querySelector(
         '.panda-bridge-results'
       ) as HTMLElement;
-      finalResultContainer.style.display = 'block';
+      finalResultContainer.classList.remove('hidden');
+      finalResultContainer.classList.add('visible');
       finalResultContainer.empty();
       const title = finalResultContainer.createEl('h3', { text: 'Sync Results' });
       const resultsList = finalResultContainer.createDiv('panda-bridge-results-list');
@@ -298,15 +299,20 @@ export class SyncModal extends Modal {
           cls: 'panda-bridge-section-title',
           text: `Skipped (${skipped.length})`,
         });
-        const skippedList = finalResultContainer.createDiv('panda-bridge-results-list');
-        skippedList.style.display = 'none';
+        const skippedList = finalResultContainer.createDiv('panda-bridge-results-list panda-bridge-skipped-list hidden');
         skipped.forEach((s) => {
           const item = skippedList.createDiv('panda-bridge-result-item');
           item.createSpan({ text: s });
         });
         skipHeader.onclick = () => {
-          const isHidden = skippedList.style.display === 'none';
-          skippedList.style.display = isHidden ? 'block' : 'none';
+          const isHidden = skippedList.classList.contains('hidden');
+          if (isHidden) {
+            skippedList.classList.remove('hidden');
+            skippedList.classList.add('visible');
+          } else {
+            skippedList.classList.remove('visible');
+            skippedList.classList.add('hidden');
+          }
           toggle.textContent = isHidden ? '▾' : '▸';
         };
       }
@@ -361,8 +367,8 @@ export class SyncModal extends Modal {
         const buttonContainer = this.contentEl.querySelector(
           '.panda-bridge-button-container'
         ) as HTMLElement;
-        if (summaryContainer) summaryContainer.style.display = '';
-        if (buttonContainer) buttonContainer.style.display = '';
+        if (summaryContainer) summaryContainer.classList.remove('hidden');
+        if (buttonContainer) buttonContainer.classList.remove('hidden');
       } catch (e) {}
       new Notice(`❌ Sync failed: ${error.message}`);
     }
@@ -370,8 +376,9 @@ export class SyncModal extends Modal {
 
   private openSettings() {
     this.close();
-    (this.app as any).setting.open();
-    (this.app as any).setting.openTabById('panda-bridge');
+    const appWithSetting = this.app as AppWithSetting;
+    appWithSetting.setting.open();
+    appWithSetting.setting.openTabById('panda-bridge');
   }
 
   onClose() {

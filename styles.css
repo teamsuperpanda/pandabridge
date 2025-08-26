@@ -157,6 +157,7 @@
 .panda-bridge-card.update { border-left: 4px solid #f59e0b; }
 .panda-bridge-card.delete { border-left: 4px solid #ef4444; }
 .panda-bridge-card-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px 8px; border-bottom: 1px solid var(--background-modifier-border-hover); }
+.panda-bridge-card-header-stacked { display: flex; flex-direction: column; align-items: flex-start; }
 .panda-bridge-card-number { font-weight: 600; color: var(--text-normal); font-size: .9em; }
 .panda-bridge-card-deck { font-size: .8em; color: var(--text-muted); font-family: var(--font-monospace); }
 .panda-bridge-card-content { padding: 8px 16px; }
@@ -178,6 +179,19 @@
 .connection-icon { font-size: 1.1em; }
 .connection-text { font-weight: 600; color: var(--text-normal); }
 .connection-details { font-size: .9em; color: var(--text-muted); margin-left: auto; }
+
+
+.panda-bridge-delete-confirm .panda-bridge-button-row { display: flex; justify-content: center; gap: 10px; }
+.panda-bridge-cards-container.collapsed { display: none; }
+.panda-bridge-cards-container.expanded { display: block; }
+.panda-bridge-loading-text { margin-top: 48px; text-align: center; }
+.panda-bridge-loading-overlay { align-items: flex-start; justify-content: center; }
+.panda-bridge-results.hidden { display: none; }
+.panda-bridge-results.visible { display: block; }
+.panda-bridge-summary.hidden { display: none; }
+.panda-bridge-button-container.hidden { display: none; }
+.panda-bridge-skipped-list.hidden { display: none; }
+.panda-bridge-skipped-list.visible { display: block; }
 
 
 .mod-settings .panda-bridge-settings { padding: 1em; background: var(--background-secondary); border-radius: 8px; }

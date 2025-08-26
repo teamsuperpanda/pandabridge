@@ -2,6 +2,11 @@ import { PluginSettingTab, App, Setting, Notice } from 'obsidian';
 import PandaBridgePlugin from '../main';
 import { DEFAULT_SETTINGS } from '../sync/types';
 
+// Interface to properly type the TextComponent's inputEl property
+interface TextComponentWithInput {
+  inputEl: HTMLInputElement;
+}
+
 export class PandaBridgeSettingTab extends PluginSettingTab {
   plugin: PandaBridgePlugin;
   private connectionResultEl: HTMLElement;
@@ -102,7 +107,7 @@ export class PandaBridgeSettingTab extends PluginSettingTab {
           });
 
         // restore default if left empty on blur and notify the user
-        const inputEl = (text as any).inputEl as HTMLInputElement;
+        const inputEl = (text as TextComponentWithInput).inputEl;
         inputEl.addEventListener('blur', async () => {
           if (!inputEl.value || !inputEl.value.trim()) {
             const def = DEFAULT_SETTINGS.deckOverrideWord;
@@ -133,7 +138,7 @@ export class PandaBridgeSettingTab extends PluginSettingTab {
               questionSetting.descEl.textContent = `Example: ${w}: What is the capital of France?`;
           });
 
-        const inputEl = (text as any).inputEl as HTMLInputElement;
+        const inputEl = (text as TextComponentWithInput).inputEl;
         inputEl.addEventListener('blur', async () => {
           if (!inputEl.value || !inputEl.value.trim()) {
             const def = DEFAULT_SETTINGS.questionWord;
@@ -163,7 +168,7 @@ export class PandaBridgeSettingTab extends PluginSettingTab {
             if (answerSetting.descEl) answerSetting.descEl.textContent = `Example: ${w}: Paris`;
           });
 
-        const inputEl = (text as any).inputEl as HTMLInputElement;
+        const inputEl = (text as TextComponentWithInput).inputEl;
         inputEl.addEventListener('blur', async () => {
           if (!inputEl.value || !inputEl.value.trim()) {
             const def = DEFAULT_SETTINGS.answerWord;
