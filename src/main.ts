@@ -18,14 +18,13 @@ export default class PandaBridgePlugin extends Plugin {
     this.cardExtractor = new CardExtractor(this.app, this.settings);
 
     const ribbonIconEl = this.addRibbonIcon(
-      '🐼',
+      'cards',
       'Panda Bridge - Click to sync cards to Anki',
       () => {
         this.openSyncDialog();
       }
     );
     ribbonIconEl.addClass(CSS_CLASSES.RIBBON);
-    ribbonIconEl.textContent = '🐼';
     ribbonIconEl.setAttribute('aria-label', 'Panda Bridge Sync');
 
     this.addCommand({
@@ -41,8 +40,6 @@ export default class PandaBridgePlugin extends Plugin {
     this.registerMarkdownPostProcessor((element, _context) => {
       this.cardExtractor.processQACards(element, this);
     });
-
-    console.log('🐼 Panda Bridge plugin loaded successfully');
   }
 
   /**

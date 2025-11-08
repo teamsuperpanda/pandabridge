@@ -1,6 +1,6 @@
 import { Modal, App, Notice } from 'obsidian';
 import PandaBridgePlugin from '../main';
-import { SyncAnalysis, CardAction } from '../sync/types';
+import { SyncAnalysis } from '../sync/types';
 import { PreviewModal } from './PreviewModal';
 
 // Interface to properly type the App's setting property
@@ -49,7 +49,6 @@ export class SyncModal extends Modal {
     this.renderSyncSummary(summaryContainer);
     const buttonContainer = contentEl.createDiv('panda-bridge-button-container');
     this.renderButtons(buttonContainer);
-    const resultContainer = contentEl.createDiv('panda-bridge-results hidden');
   }
 
   private async checkConnectionAndLoadAnalysis() {
@@ -58,7 +57,7 @@ export class SyncModal extends Modal {
       if (this.isConnected) {
         this.syncAnalysis = await this.plugin.analyzeSyncOperation();
       }
-    } catch (error) {
+    } catch {
       this.isConnected = false;
     }
   }
@@ -149,7 +148,7 @@ export class SyncModal extends Modal {
           } else {
             new Notice('❌ Still not connected to Anki');
           }
-        } catch (e) {
+        } catch {
           new Notice('❌ Connection test failed');
         }
         testBtn.disabled = false;
@@ -230,7 +229,7 @@ export class SyncModal extends Modal {
       if (!this.syncAnalysis) {
         try {
           this.syncAnalysis = await this.plugin.analyzeSyncOperation();
-        } catch (e) {
+        } catch {
           // ignore analysis failure — we'll proceed without deletion prompt
         }
       }
@@ -275,7 +274,7 @@ export class SyncModal extends Modal {
       finalResultContainer.classList.remove('hidden');
       finalResultContainer.classList.add('visible');
       finalResultContainer.empty();
-      const title = finalResultContainer.createEl('h3', { text: 'Sync Results' });
+      finalResultContainer.createEl('h3', { text: 'Sync Results' });
       const resultsList = finalResultContainer.createDiv('panda-bridge-results-list');
       // Separate skipped entries from main results and render skipped in a collapsible section
       const skipped: string[] = [];
@@ -327,7 +326,7 @@ export class SyncModal extends Modal {
         if (!deletionAnalysis) {
           try {
             deletionAnalysis = await this.plugin.analyzeSyncOperation();
-          } catch (err) {
+          } catch {
             // ignore — we'll still show the generic deleted summary
           }
         }
@@ -369,7 +368,9 @@ export class SyncModal extends Modal {
         ) as HTMLElement;
         if (summaryContainer) summaryContainer.classList.remove('hidden');
         if (buttonContainer) buttonContainer.classList.remove('hidden');
-      } catch (e) {}
+      } catch {
+        // ignore sync error
+      }
       new Notice(`❌ Sync failed: ${error.message}`);
     }
   }

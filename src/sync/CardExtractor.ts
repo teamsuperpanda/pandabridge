@@ -41,6 +41,7 @@ export class CardExtractor {
     return new RegExp(`([*_]{0,2})${escQ}\\s*|([*_]{0,2})${escA}\\s*`, 'gi');
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   processQACards(element: HTMLElement, plugin?: any) {
     const containers = element.querySelectorAll('p, div, span, li');
 

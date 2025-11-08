@@ -19,9 +19,8 @@ export class PandaBridgeSettingTab extends PluginSettingTab {
   display(): void {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.createEl('h2', { text: 'Panda Bridge Settings 🐼' });
 
-    containerEl.createEl('h3', { text: 'Sync Options' });
+    new Setting(containerEl).setName('Sync Options').setHeading();
 
     new Setting(containerEl)
       .setName('Use Note-based Deck Organization')
@@ -47,7 +46,7 @@ export class PandaBridgeSettingTab extends PluginSettingTab {
         })
       );
 
-    containerEl.createEl('h3', { text: 'Anki Connect Settings' });
+    new Setting(containerEl).setName('Anki Connect').setHeading();
 
     // Restore defaults button for quick reset
     new Setting(containerEl)

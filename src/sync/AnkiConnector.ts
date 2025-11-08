@@ -4,6 +4,7 @@ import { ANKI_CONNECT_VERSION, DEFAULT_TIMEOUT_MS, PLUGIN_TAG } from '../constan
 export class AnkiConnector {
   private settings: PandaBridgeSettings;
   // Simple cache for notes info per-deck to avoid per-card findNotes calls
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private noteCache: { deckName: string; byFront: Map<string, any>; noteIds: string[] } | null =
     null;
 
@@ -19,7 +20,7 @@ export class AnkiConnector {
     try {
       const response = await this.ankiConnectRequest('version', ANKI_CONNECT_VERSION);
       return response !== null;
-    } catch (error) {
+    } catch {
       return false;
     }
   }
@@ -78,7 +79,7 @@ export class AnkiConnector {
               };
               analysis.cardsToUpdate.push(cardSyncInfo);
             }
-          } catch (err) {
+          } catch {
             // If we can't fetch note info, be conservative and schedule an update
             const cardSyncInfo: CardSyncInfo = {
               card,
@@ -91,8 +92,8 @@ export class AnkiConnector {
         } else {
           analysis.cardsToAdd.push({ card, action: CardAction.ADD, deckName });
         }
-      } catch (error) {
-        console.error(`Error analyzing card: ${card.question}`, error);
+      } catch {
+        // Silently skip cards with analysis errors
         analysis.cardsToAdd.push({
           card,
           action: CardAction.ADD,
@@ -193,7 +194,9 @@ export class AnkiConnector {
         await this.ankiConnectRequest('createDeck', 6, {
           deck: deckName,
         });
-      } catch (error) {}
+      } catch {
+        // ignore deck creation errors
+      }
     }
 
     for (const card of cards) {
@@ -288,7 +291,7 @@ export class AnkiConnector {
           if (front === qTrim && back === aTrim) {
             return false;
           }
-        } catch (err) {
+        } catch {
           // If we can't read cached info, fallthrough and attempt update conservatively
         }
 
@@ -324,11 +327,11 @@ export class AnkiConnector {
 
     try {
       // Prefer plugin-tagged notes to avoid scanning entire deck
-      let query = `deck:"${deckName}" tag:${PLUGIN_TAG}`;
+      const query = `deck:"${deckName}" tag:${PLUGIN_TAG}`;
       let noteIds: string[] = [];
       try {
         noteIds = await this.ankiConnectRequest('findNotes', 6, { query });
-      } catch (e) {
+      } catch {
         // ignore and try deck-only
       }
 
@@ -336,7 +339,7 @@ export class AnkiConnector {
         // Fallback to deck-only query
         try {
           noteIds = await this.ankiConnectRequest('findNotes', 6, { query: `deck:"${deckName}"` });
-        } catch (e) {
+        } catch {
           noteIds = [];
         }
       }
@@ -354,13 +357,13 @@ export class AnkiConnector {
               : '';
           const key = this.normalizeField(front);
           const id = ni.noteId || ni.noteIds?.[0] || ni.id;
-          this.noteCache!.noteIds.push(id);
-          this.noteCache!.byFront.set(key, { noteId: id, fields: ni.fields, raw: ni });
-        } catch (e) {
+          this.noteCache?.noteIds.push(id);
+          this.noteCache?.byFront.set(key, { noteId: id, fields: ni.fields, raw: ni });
+        } catch {
           // ignore individual failures
         }
       }
-    } catch (err) {
+    } catch {
       // On any failure, clear cache
       this.noteCache = null;
     }
@@ -371,8 +374,8 @@ export class AnkiConnector {
     if (noteContent && this.settings.deckOverrideWord) {
       const firstLine = noteContent.split(/\r?\n/)[0] || '';
       // Escape word for safe regex use and require the literal '::' after it
-      const esc = this.settings.deckOverrideWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const prefRegex = new RegExp(`^${esc}::\s*(.+)$`, 'i');
+      const esc = this.settings.deckOverrideWord.replace(/[.*+?^${}(|[\]\\]/g, '\\$&');
+      const prefRegex = new RegExp(`^${esc}::\\s*(.+)$`, 'i');
       const m = firstLine.match(prefRegex);
       if (m && m[1]) {
         // Normalize any '/' to Anki's '::' nested-deck separator
@@ -402,7 +405,7 @@ export class AnkiConnector {
       let u: URL;
       try {
         u = new URL(maybeUrl);
-      } catch (e) {
+      } catch {
         // If the URL is missing protocol, prepend http://
         u = new URL(`http://${maybeUrl}`);
       }
@@ -410,7 +413,7 @@ export class AnkiConnector {
         u.port = String(this.settings.ankiConnectPort);
       }
       return u.toString();
-    } catch (err) {
+    } catch {
       // Fallback
       return `http://127.0.0.1:${this.settings.ankiConnectPort || 8765}`;
     }
@@ -418,6 +421,7 @@ export class AnkiConnector {
 
   private async fetchWithTimeout(
     input: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     init: any = {},
     timeoutMs: number = DEFAULT_TIMEOUT_MS
   ): Promise<Response> {
@@ -435,6 +439,7 @@ export class AnkiConnector {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async ankiConnectRequest(action: string, version: number, params?: any): Promise<any> {
     const baseUrl = this.buildAnkiConnectUrl();
     const payload = JSON.stringify({ action, version, params });
@@ -471,17 +476,19 @@ export class AnkiConnector {
           throw new Error(data.error);
         }
         return data.result;
-      } catch (error: any) {
-        const isAbort = error && (error.name === 'AbortError' || error.type === 'aborted');
+      } catch (error) {
+        // error type could be any - necessary for catching network errors
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const isAbort = (error as any).name === 'AbortError' || (error as any).type === 'aborted';
         const isNetwork =
-          error && (error.name === 'TypeError' || error.message === 'Failed to fetch');
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (error as any).name === 'TypeError' || (error as any).message === 'Failed to fetch';
         const shouldRetry = (isAbort || isNetwork) && attempt < MAX_RETRIES;
         if (shouldRetry) {
           const backoff = 200 * Math.pow(2, attempt);
           await this.sleep(backoff + Math.random() * 150);
           continue;
         }
-        console.error('Anki Connect request failed:', error);
         throw error;
       }
     }

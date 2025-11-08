@@ -1,6 +1,6 @@
 {
   "name": "panda-bridge",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "type": "module",
   "description": "Obsidian plugin with Anki Connect integration by Team Super Panda",
   "main": "main.js",
@@ -24,7 +24,7 @@
     "@types/node": "^24.9.1",
     "@typescript-eslint/eslint-plugin": "^8.44.1",
     "@typescript-eslint/parser": "^8.46.2",
-    "@vitest/coverage-v8": "^3.2.4",
+    "@vitest/coverage-v8": "^4.0.8",
     "builtin-modules": "^5.0.0",
     "esbuild": "^0.25.11",
     "eslint": "^9.34.0",
@@ -32,6 +32,6 @@
     "prettier": "^3.4.2",
     "tslib": "^2.8.1",
     "typescript": "^5.7.3",
-    "vitest": "^3.2.4"
+    "vitest": "^4.0.8"
   }
 }

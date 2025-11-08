@@ -42,11 +42,11 @@ export function extractQACardsFromText(content: string, settings: PandaBridgeSet
       const qRegex = new RegExp(`^(?:[*_]{0,2})${escQ}\\s*(.+)`, 'i');
       const qMatch = line.match(qRegex);
       if (qMatch && i + 1 < lines.length) {
-        let aLine = lines[i + 1];
+        const aLine = lines[i + 1];
         const aRegex = new RegExp(`^(?:[*_]{0,2})${escA}\\s*(.*)`, 'i');
         const aMatch = aLine.match(aRegex);
         if (aMatch !== null) {
-          let answerLines = [aMatch[1]];
+          const answerLines = [aMatch[1]];
           let j = i + 2;
           while (j < lines.length) {
             const next = lines[j];
