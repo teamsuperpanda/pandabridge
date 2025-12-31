@@ -1,6 +1,6 @@
 {
   "name": "panda-bridge",
-  "version": "1.0.2",
+  "version": "1.3.0",
   "type": "module",
   "description": "Obsidian plugin with Anki Connect integration by Team Super Panda",
   "main": "main.js",
