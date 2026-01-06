@@ -1,15 +1,24 @@
+import { App } from 'obsidian';
 import { AnkiCard, PandaBridgeSettings, SyncAnalysis, CardAction, CardSyncInfo } from './types';
 import { ANKI_CONNECT_VERSION, DEFAULT_TIMEOUT_MS, PLUGIN_TAG } from '../constants';
+import {
+  resolveImageSource,
+  readImageFileToBase64,
+  downloadImageToBase64,
+  getImageFilename,
+} from './imageUtils';
 
 export class AnkiConnector {
   private settings: PandaBridgeSettings;
+  private app: App;
   // Simple cache for notes info per-deck to avoid per-card findNotes calls
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private noteCache: { deckName: string; byFront: Map<string, any>; noteIds: string[] } | null =
     null;
 
-  constructor(settings: PandaBridgeSettings) {
+  constructor(settings: PandaBridgeSettings, app: App) {
     this.settings = settings;
+    this.app = app;
   }
 
   /**
@@ -67,7 +76,42 @@ export class AnkiConnector {
             const back = (ni?.fields?.Back?.value || '').trim();
             const qTrim = (card.question || '').trim();
             const aTrim = (card.answer || '').trim();
-            if (front === qTrim && back === aTrim) {
+            
+            let match = false;
+            // Normalize front/back for comparison
+            // Anki might wrap content in <div> or have different whitespace
+            // Ideally we'd strip HTML, but for now strict check
+            
+            if (front === qTrim) {
+              if (card.image) {
+                // Heuristic: if card has image, check if Back contains filename (raw or encoded)
+                // If the answer is present, it must be in the back field.
+                const filename = getImageFilename(card.image);
+                const encodedFilename = encodeURI(filename);
+                const spaceEncodedFilename = filename.replace(/ /g, '%20');
+                const underscoreFilename = filename.replace(/ /g, '_');
+                
+                const hasFilename = 
+                  back.includes(filename) || 
+                  back.includes(encodedFilename) || 
+                  back.includes(spaceEncodedFilename) ||
+                  back.includes(underscoreFilename);
+                
+                const hasAnswer = !aTrim || back.includes(aTrim);
+                const hasImgTag = back.includes('<img');
+
+                if (hasAnswer && hasImgTag && hasFilename) {
+                  match = true;
+                }
+              } else {
+                // No image: Strict equality
+                if (back === aTrim) {
+                  match = true;
+                }
+              }
+            }
+
+            if (match) {
               // No change — skip
               continue;
             } else {
@@ -201,19 +245,49 @@ export class AnkiConnector {
 
     for (const card of cards) {
       try {
+        if (!card.answer && !card.image) {
+          results.push(`⚠️ Skipped invalid card (missing answer and image): ${card.question}`);
+          continue;
+        }
+
         if (preview) {
           const targetDeck =
             this.settings.useNoteBased && notePath ? deckName : this.settings.defaultDeck;
           const qTag = `${this.settings.questionWord}:`;
           const aTag = `${this.settings.answerWord}:`;
+          const iInfo = card.image ? ` | 🖼️ Image: ${card.image}` : '';
+          const aInfo = card.answer ? `${card.answer}` : '(image only)';
+          
           results.push(
-            `Preview: ${qTag} ${card.question} | ${aTag} ${card.answer} | Deck: ${targetDeck}`
+            `Preview: ${qTag} ${card.question} | ${aTag} ${aInfo}${iInfo} | Deck: ${targetDeck}`
           );
         } else {
-          const updated = await this.updateExistingCard(card, deckName);
-          if (updated) {
+          // 1. Handle Image
+          let finalBack = card.answer;
+          if (card.image && notePath) {
+            try {
+              const storedFilename = await this.uploadImageToAnki(card.image, notePath);
+              if (storedFilename) {
+                if (finalBack) {
+                  finalBack += `<br><img src="${storedFilename}">`;
+                } else {
+                   finalBack = `<img src="${storedFilename}">`;
+                }
+              }
+            } catch (e) {
+              results.push(`⚠️ Image failed (${card.image}): ${e.message}`);
+              // Continue sync with text only
+            }
+          }
+
+          const updateStatus = await this.updateExistingCard(card, deckName, finalBack);
+          
+          if (updateStatus.status === 'updated') {
             results.push(`🔄 Updated: ${card.question} → ${deckName}`);
+          } else if (updateStatus.status === 'identical') {
+            results.push(`ℹ️ Skipped (already up-to-date): ${card.question} → ${deckName}`);
           } else {
+            // not found or error, try adding
             try {
               await this.ankiConnectRequest('addNote', 6, {
                 note: {
@@ -221,7 +295,7 @@ export class AnkiConnector {
                   modelName: this.settings.noteType,
                   fields: {
                     Front: card.question,
-                    Back: card.answer,
+                    Back: finalBack,
                   },
                   tags: ['panda-bridge', 'obsidian'],
                 },
@@ -265,7 +339,11 @@ export class AnkiConnector {
     return results;
   }
 
-  private async updateExistingCard(card: AnkiCard, deckName: string): Promise<boolean> {
+  private async updateExistingCard(
+    card: AnkiCard,
+    deckName: string,
+    backContentOverride?: string
+  ): Promise<{ status: 'updated' | 'identical' | 'missing' }> {
     try {
       // Use cached notes when available to avoid extra network calls
       await this.prefetchNotesForDeck(deckName);
@@ -275,6 +353,8 @@ export class AnkiConnector {
         const entry = this.noteCache.byFront.get(key);
         noteId = entry && (entry.noteId || entry.id);
       }
+      
+      const targetBack = backContentOverride !== undefined ? backContentOverride : card.answer;
 
       if (noteId) {
         // Use cached fields if available to avoid notesInfo call
@@ -287,9 +367,47 @@ export class AnkiConnector {
             .toString()
             .trim();
           const qTrim = (card.question || '').trim();
-          const aTrim = (card.answer || '').trim();
-          if (front === qTrim && back === aTrim) {
-            return false;
+          const aTrim = (targetBack || '').trim();
+
+          // Robust check for identical content
+          let isIdentical = false;
+
+          if (front === qTrim) {
+             if (card.image) {
+                // Determine if 'back' effectively matches 'targetBack'
+                // targetBack will contain the specific filename we just synced.
+                // However, Anki might have renamed it slightly (underscores).
+                // We can check if 'back' contains the text answer AND the image filename.
+                
+                const filename = getImageFilename(card.image);
+                // Variants to check
+                const encodedFilename = encodeURI(filename);
+                const spaceEncodedFilename = filename.replace(/ /g, '%20');
+                const underscoreFilename = filename.replace(/ /g, '_');
+
+                const hasFilename = 
+                  back.includes(filename) || 
+                  back.includes(encodedFilename) || 
+                  back.includes(spaceEncodedFilename) ||
+                  back.includes(underscoreFilename);
+
+                 // Check if the text part of the answer is present (if any)
+                const textPart = card.answer ? card.answer.trim() : '';
+                const hasAnswer = !textPart || back.includes(textPart);
+                const hasImgTag = back.includes('<img');
+
+                if (hasAnswer && hasImgTag && hasFilename) {
+                  isIdentical = true;
+                }
+             } else {
+                 if (back === aTrim) {
+                     isIdentical = true;
+                 }
+             }
+          }
+
+          if (isIdentical) {
+            return { status: 'identical' };
           }
         } catch {
           // If we can't read cached info, fallthrough and attempt update conservatively
@@ -300,20 +418,43 @@ export class AnkiConnector {
             id: noteId,
             fields: {
               Front: card.question,
-              Back: card.answer,
+              Back: targetBack,
             },
           },
         });
         // Invalidate cache if present since we changed a note
         this.noteCache = null;
-        return true;
+        return { status: 'updated' };
       }
 
-      return false;
+      return { status: 'missing' };
     } catch (error) {
       console.log('Could not update existing card:', error);
-      return false;
+      return { status: 'missing' };
     }
+  }
+
+  private async uploadImageToAnki(imagePath: string, notePath: string): Promise<string | null> {
+    const source = resolveImageSource(this.app, imagePath, notePath);
+    if (!source) return null;
+
+    let base64 = '';
+    let filename = '';
+
+    if (typeof source === 'string') {
+      base64 = await downloadImageToBase64(source);
+      filename = getImageFilename(source);
+    } else {
+      base64 = await readImageFileToBase64(this.app, source as any); // Type cast for TFile
+      filename = (source as any).name || getImageFilename((source as any).path);
+    }
+
+    // Store
+    const result = await this.ankiConnectRequest('storeMediaFile', 6, {
+      filename: filename,
+      data: base64,
+    });
+    return result; // returns filename
   }
 
   private normalizeField(s: string): string {
@@ -369,6 +510,21 @@ export class AnkiConnector {
     }
   }
 
+  private getDeckNameFromPath(notePath?: string): string {
+    if (!notePath) return '';
+    
+    const pathParts = notePath.split('/');
+    const noteNameWithExt = pathParts.pop() || 'Unknown';
+    const noteName = noteNameWithExt.replace(/\.md$/, '');
+    const folderPath = pathParts.length > 0 ? pathParts.join('/') : '';
+
+    if (folderPath) {
+      return `${folderPath}::${noteName}`;
+    } else {
+      return noteName;
+    }
+  }
+
   private getDeckName(notePath?: string, noteContent?: string): string {
     // Allow a Deck:: override on the first line of the note regardless of "useNoteBased".
     if (noteContent && this.settings.deckOverrideWord) {
@@ -387,16 +543,7 @@ export class AnkiConnector {
       return this.settings.defaultDeck;
     }
 
-    const pathParts = notePath.split('/');
-    const noteNameWithExt = pathParts.pop() || 'Unknown';
-    const noteName = noteNameWithExt.replace(/\.md$/, '');
-    const folderPath = pathParts.length > 0 ? pathParts.join('/') : '';
-
-    if (folderPath) {
-      return `${folderPath}::${noteName}`;
-    } else {
-      return noteName;
-    }
+    return this.getDeckNameFromPath(notePath);
   }
   private buildAnkiConnectUrl(): string {
     // Normalize URL + port. settings.ankiConnectUrl may include protocol and/or port.

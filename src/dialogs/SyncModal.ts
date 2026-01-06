@@ -49,6 +49,8 @@ export class SyncModal extends Modal {
     this.renderSyncSummary(summaryContainer);
     const buttonContainer = contentEl.createDiv('panda-bridge-button-container');
     this.renderButtons(buttonContainer);
+    // Create results container (hidden by default)
+    contentEl.createDiv('panda-bridge-results hidden');
   }
 
   private async checkConnectionAndLoadAnalysis() {

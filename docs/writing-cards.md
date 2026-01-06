@@ -53,7 +53,31 @@ Add a first line like `Deck::my/deck/name` to explicitly set the target deck for
 - Surrounding `*` or `_` around the `Q:`/`A:` labels is accepted by the extractor (so `*Q:*` or `_A:_` will match). The extractor strips surrounding asterisks/underscores from the captured question/answer text.
 - Leading/trailing whitespace around questions and answers is trimmed.
 
-Note: If a `Q:` is present without a matching `A:` on the same line or in the following lines (before the next label or a blank line), no card will be produced for that question.
+Note: If a `Q:` is present without a matching `A:` on the same line or in the following lines (before the next label or a blank line), no card will be produced for that question, UNLESS an image tag (`I:`) is present.
+
+6) Images
+
+You can include images in your cards using the `I:` label. The image will be displayed on the back of the card (Answer side).
+The `A:` (Answer) field is optional if `I:` is present. This allows for "image-only" answers.
+
+Supported formats include:
+- Obsidian internal links: `[[image.png]]` or `![[image.png]]`
+- Markdown links: `![Alt Text](path/to/image.png)`
+- Raw paths/URLs: `path/to/image.png`
+
+Example (Text + Image):
+    ```markdown
+    Q: Identify this cell organelle
+    A: Mitochondrion
+    I: [[mitochondrion.jpg]]
+    ```
+
+Example (Image only):
+    ```markdown
+    Q: What does the UI look like?
+    I: [[screenshot.png]]
+    ```
+    This creates a card with Front "What does the UI look like?" and Back "<img src='screenshot.png'>".
 
 ## What is not supported
 

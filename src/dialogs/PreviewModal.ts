@@ -86,7 +86,17 @@ export class PreviewModal extends Modal {
         text: `${this.settings.answerWord}: `,
         cls: 'panda-bridge-card-label',
       });
-      answerDiv.createSpan({ text: cardInfo.card.answer, cls: 'panda-bridge-card-text' });
+      const answerText = cardInfo.card.answer || '(image only)';
+      answerDiv.createSpan({ text: answerText, cls: 'panda-bridge-card-text' });
+
+      if (cardInfo.card.image) {
+        const imageDiv = cardContent.createDiv('panda-bridge-card-image');
+        imageDiv.createSpan({
+          text: `Image: `,
+          cls: 'panda-bridge-card-label',
+        });
+        imageDiv.createSpan({ text: cardInfo.card.image, cls: 'panda-bridge-card-text' });
+      }
     });
   }
 

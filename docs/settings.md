@@ -32,6 +32,9 @@ Keep Anki running and reachable at this address while syncing.
 - **Question Word / Answer Word**
   - Words the extractor looks for when parsing Q/A pairs (defaults: `Q` and `A`). These are matched case-insensitively and expected to be followed by `:`.
 
+- **Image Word**
+  - Word the extractor looks for when parsing image tags (default: `I`). Matched case-insensitively and followed by `:`.
+
 ### Note Type (IMPORTANT)
 
 - **Note Type**
