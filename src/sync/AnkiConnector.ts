@@ -80,9 +80,21 @@ export class AnkiConnector {
             let match = false;
             if (front === qTrim) {
               if (card.image) {
-                // Heuristic: if card has image, check if Back contains filename and Answer
+                // Heuristic: if card has image, check if Back contains filename (raw or encoded)
+                // If the answer is present, it must be in the back field.
                 const filename = getImageFilename(card.image);
-                if (back.includes(aTrim) && back.includes('<img') && back.includes(filename)) {
+                const encodedFilename = encodeURI(filename);
+                const spaceEncodedFilename = filename.replace(/ /g, '%20');
+                
+                const hasFilename = 
+                  back.includes(filename) || 
+                  back.includes(encodedFilename) || 
+                  back.includes(spaceEncodedFilename);
+                
+                const hasAnswer = !aTrim || back.includes(aTrim);
+                const hasImgTag = back.includes('<img');
+
+                if (hasAnswer && hasImgTag && hasFilename) {
                   match = true;
                 }
               } else {
@@ -250,7 +262,11 @@ export class AnkiConnector {
             try {
               const storedFilename = await this.uploadImageToAnki(card.image, notePath);
               if (storedFilename) {
-                finalBack += `<br><img src="${storedFilename}">`;
+                if (finalBack) {
+                  finalBack += `<br><img src="${storedFilename}">`;
+                } else {
+                   finalBack = `<img src="${storedFilename}">`;
+                }
               }
             } catch (e) {
               results.push(`⚠️ Image failed (${card.image}): ${e.message}`);
