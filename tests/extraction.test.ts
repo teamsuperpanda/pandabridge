@@ -12,6 +12,7 @@ const defaultSettings: PandaBridgeSettings = {
   noteType: 'Basic',
   useNoteBased: true,
   boldQuestionInReadingMode: true,
+  imageWord: 'I',
 };
 
 describe('extractQACardsFromText', () => {

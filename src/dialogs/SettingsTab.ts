@@ -180,6 +180,34 @@ export class PandaBridgeSettingTab extends PluginSettingTab {
         });
       });
 
+    const currentI = this.plugin.settings.imageWord || DEFAULT_SETTINGS.imageWord;
+    const imageSetting = new Setting(containerEl)
+      .setName('Image word')
+      .setDesc(`Example: ${currentI}: [[my-image.png]]`)
+      .addText((text) => {
+        text
+          .setPlaceholder('I')
+          .setValue(this.plugin.settings.imageWord)
+          .onChange(async (value) => {
+            this.plugin.settings.imageWord = value;
+            await this.plugin.saveSettings();
+            const w = (value && value.trim()) || DEFAULT_SETTINGS.imageWord;
+            if (imageSetting.descEl) imageSetting.descEl.textContent = `Example: ${w}: [[my-image.png]]`;
+          });
+
+        const inputEl = (text as TextComponentWithInput).inputEl;
+        inputEl.addEventListener('blur', async () => {
+          if (!inputEl.value || !inputEl.value.trim()) {
+            const def = DEFAULT_SETTINGS.imageWord;
+            text.setValue(def);
+            this.plugin.settings.imageWord = def;
+            await this.plugin.saveSettings();
+            if (imageSetting.descEl) imageSetting.descEl.textContent = `Example: ${def}: [[my-image.png]]`;
+            new Notice('Image word cannot be empty — restored to default');
+          }
+        });
+      });
+
     new Setting(containerEl)
       .setName('Test Anki Connection')
       .setDesc('Test the connection to Anki Connect.')

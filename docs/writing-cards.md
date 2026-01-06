@@ -55,6 +55,23 @@ Add a first line like `Deck::my/deck/name` to explicitly set the target deck for
 
 Note: If a `Q:` is present without a matching `A:` on the same line or in the following lines (before the next label or a blank line), no card will be produced for that question.
 
+6) Images
+
+You can include images in your cards using the `I:` label. The image will be displayed on the back of the card (Answer side).
+Supported formats include:
+- Obsidian internal links: `[[image.png]]` or `![[image.png]]`
+- Markdown links: `![Alt Text](path/to/image.png)`
+- Raw paths/URLs: `path/to/image.png`
+
+Example:
+    ```markdown
+    Q: Identify this cell organelle
+    A: Mitochondrion
+    I: [[mitochondrion.jpg]]
+    ```
+
+    This creates a card with Front "Identify this cell organelle" and Back "Mitochondrion <br> <img src='mitochondrion.jpg'>".
+
 ## What is not supported
 
 - Cloze deletions or Cloze note types are not supported. Do not expect `{{c1::...}}` style generation.

@@ -1,15 +1,24 @@
+import { App } from 'obsidian';
 import { AnkiCard, PandaBridgeSettings, SyncAnalysis, CardAction, CardSyncInfo } from './types';
 import { ANKI_CONNECT_VERSION, DEFAULT_TIMEOUT_MS, PLUGIN_TAG } from '../constants';
+import {
+  resolveImageSource,
+  readImageFileToBase64,
+  downloadImageToBase64,
+  getImageFilename,
+} from './imageUtils';
 
 export class AnkiConnector {
   private settings: PandaBridgeSettings;
+  private app: App;
   // Simple cache for notes info per-deck to avoid per-card findNotes calls
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private noteCache: { deckName: string; byFront: Map<string, any>; noteIds: string[] } | null =
     null;
 
-  constructor(settings: PandaBridgeSettings) {
+  constructor(settings: PandaBridgeSettings, app: App) {
     this.settings = settings;
+    this.app = app;
   }
 
   /**
@@ -67,7 +76,24 @@ export class AnkiConnector {
             const back = (ni?.fields?.Back?.value || '').trim();
             const qTrim = (card.question || '').trim();
             const aTrim = (card.answer || '').trim();
-            if (front === qTrim && back === aTrim) {
+            
+            let match = false;
+            if (front === qTrim) {
+              if (card.image) {
+                // Heuristic: if card has image, check if Back contains filename and Answer
+                const filename = getImageFilename(card.image);
+                if (back.includes(aTrim) && back.includes('<img') && back.includes(filename)) {
+                  match = true;
+                }
+              } else {
+                // No image: Strict equality
+                if (back === aTrim) {
+                  match = true;
+                }
+              }
+            }
+
+            if (match) {
               // No change — skip
               continue;
             } else {
@@ -201,16 +227,38 @@ export class AnkiConnector {
 
     for (const card of cards) {
       try {
+        if (!card.answer && !card.image) {
+          results.push(`⚠️ Skipped invalid card (missing answer and image): ${card.question}`);
+          continue;
+        }
+
         if (preview) {
           const targetDeck =
             this.settings.useNoteBased && notePath ? deckName : this.settings.defaultDeck;
           const qTag = `${this.settings.questionWord}:`;
           const aTag = `${this.settings.answerWord}:`;
+          const iInfo = card.image ? ` | 🖼️ Image: ${card.image}` : '';
+          const aInfo = card.answer ? `${card.answer}` : '(image only)';
+          
           results.push(
-            `Preview: ${qTag} ${card.question} | ${aTag} ${card.answer} | Deck: ${targetDeck}`
+            `Preview: ${qTag} ${card.question} | ${aTag} ${aInfo}${iInfo} | Deck: ${targetDeck}`
           );
         } else {
-          const updated = await this.updateExistingCard(card, deckName);
+          // 1. Handle Image
+          let finalBack = card.answer;
+          if (card.image && notePath) {
+            try {
+              const storedFilename = await this.uploadImageToAnki(card.image, notePath);
+              if (storedFilename) {
+                finalBack += `<br><img src="${storedFilename}">`;
+              }
+            } catch (e) {
+              results.push(`⚠️ Image failed (${card.image}): ${e.message}`);
+              // Continue sync with text only
+            }
+          }
+
+          const updated = await this.updateExistingCard(card, deckName, finalBack);
           if (updated) {
             results.push(`🔄 Updated: ${card.question} → ${deckName}`);
           } else {
@@ -221,7 +269,7 @@ export class AnkiConnector {
                   modelName: this.settings.noteType,
                   fields: {
                     Front: card.question,
-                    Back: card.answer,
+                    Back: finalBack,
                   },
                   tags: ['panda-bridge', 'obsidian'],
                 },
@@ -265,7 +313,11 @@ export class AnkiConnector {
     return results;
   }
 
-  private async updateExistingCard(card: AnkiCard, deckName: string): Promise<boolean> {
+  private async updateExistingCard(
+    card: AnkiCard,
+    deckName: string,
+    backContentOverride?: string
+  ): Promise<boolean> {
     try {
       // Use cached notes when available to avoid extra network calls
       await this.prefetchNotesForDeck(deckName);
@@ -275,6 +327,8 @@ export class AnkiConnector {
         const entry = this.noteCache.byFront.get(key);
         noteId = entry && (entry.noteId || entry.id);
       }
+      
+      const targetBack = backContentOverride !== undefined ? backContentOverride : card.answer;
 
       if (noteId) {
         // Use cached fields if available to avoid notesInfo call
@@ -287,7 +341,7 @@ export class AnkiConnector {
             .toString()
             .trim();
           const qTrim = (card.question || '').trim();
-          const aTrim = (card.answer || '').trim();
+          const aTrim = (targetBack || '').trim();
           if (front === qTrim && back === aTrim) {
             return false;
           }
@@ -300,7 +354,7 @@ export class AnkiConnector {
             id: noteId,
             fields: {
               Front: card.question,
-              Back: card.answer,
+              Back: targetBack,
             },
           },
         });
@@ -314,6 +368,29 @@ export class AnkiConnector {
       console.log('Could not update existing card:', error);
       return false;
     }
+  }
+
+  private async uploadImageToAnki(imagePath: string, notePath: string): Promise<string | null> {
+    const source = resolveImageSource(this.app, imagePath, notePath);
+    if (!source) return null;
+
+    let base64 = '';
+    let filename = '';
+
+    if (typeof source === 'string') {
+      base64 = await downloadImageToBase64(source);
+      filename = getImageFilename(source);
+    } else {
+      base64 = await readImageFileToBase64(this.app, source as any); // Type cast for TFile
+      filename = (source as any).name || getImageFilename((source as any).path);
+    }
+
+    // Store
+    const result = await this.ankiConnectRequest('storeMediaFile', 6, {
+      filename: filename,
+      data: base64,
+    });
+    return result; // returns filename
   }
 
   private normalizeField(s: string): string {
@@ -369,6 +446,21 @@ export class AnkiConnector {
     }
   }
 
+  private getDeckNameFromPath(notePath?: string): string {
+    if (!notePath) return '';
+    
+    const pathParts = notePath.split('/');
+    const noteNameWithExt = pathParts.pop() || 'Unknown';
+    const noteName = noteNameWithExt.replace(/\.md$/, '');
+    const folderPath = pathParts.length > 0 ? pathParts.join('/') : '';
+
+    if (folderPath) {
+      return `${folderPath}::${noteName}`;
+    } else {
+      return noteName;
+    }
+  }
+
   private getDeckName(notePath?: string, noteContent?: string): string {
     // Allow a Deck:: override on the first line of the note regardless of "useNoteBased".
     if (noteContent && this.settings.deckOverrideWord) {
@@ -387,16 +479,7 @@ export class AnkiConnector {
       return this.settings.defaultDeck;
     }
 
-    const pathParts = notePath.split('/');
-    const noteNameWithExt = pathParts.pop() || 'Unknown';
-    const noteName = noteNameWithExt.replace(/\.md$/, '');
-    const folderPath = pathParts.length > 0 ? pathParts.join('/') : '';
-
-    if (folderPath) {
-      return `${folderPath}::${noteName}`;
-    } else {
-      return noteName;
-    }
+    return this.getDeckNameFromPath(notePath);
   }
   private buildAnkiConnectUrl(): string {
     // Normalize URL + port. settings.ankiConnectUrl may include protocol and/or port.

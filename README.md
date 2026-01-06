@@ -45,6 +45,8 @@ Note: Preview and full analysis that detects existing Anki notes rely on a worki
 
 - Single‑line: `Q: [question] A: [answer]`.
 
+- Images: `I: [[image.png]]` or `I: ![Alt](image.png)`. Attach images to the Answer field (Back of card).
+
 - Formatting: bold or italic around labels is allowed — the extractor strips `*` and `_`.
 
 - Avoid Q/A inside fenced code blocks or YAML frontmatter.

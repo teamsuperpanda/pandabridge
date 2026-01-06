@@ -3,6 +3,7 @@ import { ANKI_CONNECT_DEFAULT_URL, ANKI_CONNECT_DEFAULT_PORT } from '../constant
 export interface AnkiCard {
   question: string;
   answer: string;
+  image?: string;
   line: number;
 }
 
@@ -16,6 +17,8 @@ export interface PandaBridgeSettings {
   questionWord: string;
   // Word used to mark answers (left side before required ':'), e.g. 'A'
   answerWord: string;
+  // Word used to mark images (left side before required ':'), e.g. 'I'
+  imageWord: string;
   noteType: string;
   useNoteBased: boolean;
   boldQuestionInReadingMode: boolean;
@@ -46,6 +49,7 @@ export const DEFAULT_SETTINGS: PandaBridgeSettings = {
   ankiConnectPort: ANKI_CONNECT_DEFAULT_PORT,
   defaultDeck: 'Default',
   deckOverrideWord: 'Deck',
+  imageWord: 'I',
   questionWord: 'Q',
   answerWord: 'A',
   noteType: 'Basic',

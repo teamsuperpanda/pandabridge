@@ -14,7 +14,7 @@ export default class PandaBridgePlugin extends Plugin {
   async onload() {
     await this.loadSettings();
 
-    this.ankiConnector = new AnkiConnector(this.settings);
+    this.ankiConnector = new AnkiConnector(this.settings, this.app);
     this.cardExtractor = new CardExtractor(this.app, this.settings);
 
     const ribbonIconEl = this.addRibbonIcon(
@@ -70,7 +70,7 @@ export default class PandaBridgePlugin extends Plugin {
    */
   async testAnkiConnection(): Promise<boolean> {
     // Use a fresh connector created from current settings to ensure we use latest values
-    const connector = new AnkiConnector(this.settings);
+    const connector = new AnkiConnector(this.settings, this.app);
     return await connector.testConnection();
   }
 
@@ -80,7 +80,7 @@ export default class PandaBridgePlugin extends Plugin {
    */
   async analyzeSyncOperation(): Promise<SyncAnalysis> {
     // Recreate connector and extractor using current settings so analysis uses latest values
-    this.ankiConnector = new AnkiConnector(this.settings);
+    this.ankiConnector = new AnkiConnector(this.settings, this.app);
     this.cardExtractor = new CardExtractor(this.app, this.settings);
 
     const cards = await this.extractCardsFromCurrentNote();
@@ -113,7 +113,7 @@ export default class PandaBridgePlugin extends Plugin {
     preview: boolean = false,
     deleteConfirmed: boolean = false
   ): Promise<string[]> {
-    this.ankiConnector = new AnkiConnector(this.settings);
+    this.ankiConnector = new AnkiConnector(this.settings, this.app);
     const activeFile = this.app.workspace.getActiveFile();
     const notePath = activeFile ? activeFile.path : undefined;
     const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
