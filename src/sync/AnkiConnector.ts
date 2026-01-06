@@ -78,6 +78,10 @@ export class AnkiConnector {
             const aTrim = (card.answer || '').trim();
             
             let match = false;
+            // Normalize front/back for comparison
+            // Anki might wrap content in <div> or have different whitespace
+            // Ideally we'd strip HTML, but for now strict check
+            
             if (front === qTrim) {
               if (card.image) {
                 // Heuristic: if card has image, check if Back contains filename (raw or encoded)
@@ -85,11 +89,13 @@ export class AnkiConnector {
                 const filename = getImageFilename(card.image);
                 const encodedFilename = encodeURI(filename);
                 const spaceEncodedFilename = filename.replace(/ /g, '%20');
+                const underscoreFilename = filename.replace(/ /g, '_');
                 
                 const hasFilename = 
                   back.includes(filename) || 
                   back.includes(encodedFilename) || 
-                  back.includes(spaceEncodedFilename);
+                  back.includes(spaceEncodedFilename) ||
+                  back.includes(underscoreFilename);
                 
                 const hasAnswer = !aTrim || back.includes(aTrim);
                 const hasImgTag = back.includes('<img');
@@ -274,10 +280,14 @@ export class AnkiConnector {
             }
           }
 
-          const updated = await this.updateExistingCard(card, deckName, finalBack);
-          if (updated) {
+          const updateStatus = await this.updateExistingCard(card, deckName, finalBack);
+          
+          if (updateStatus.status === 'updated') {
             results.push(`🔄 Updated: ${card.question} → ${deckName}`);
+          } else if (updateStatus.status === 'identical') {
+            results.push(`ℹ️ Skipped (already up-to-date): ${card.question} → ${deckName}`);
           } else {
+            // not found or error, try adding
             try {
               await this.ankiConnectRequest('addNote', 6, {
                 note: {
@@ -333,7 +343,7 @@ export class AnkiConnector {
     card: AnkiCard,
     deckName: string,
     backContentOverride?: string
-  ): Promise<boolean> {
+  ): Promise<{ status: 'updated' | 'identical' | 'missing' }> {
     try {
       // Use cached notes when available to avoid extra network calls
       await this.prefetchNotesForDeck(deckName);
@@ -358,8 +368,46 @@ export class AnkiConnector {
             .trim();
           const qTrim = (card.question || '').trim();
           const aTrim = (targetBack || '').trim();
-          if (front === qTrim && back === aTrim) {
-            return false;
+
+          // Robust check for identical content
+          let isIdentical = false;
+
+          if (front === qTrim) {
+             if (card.image) {
+                // Determine if 'back' effectively matches 'targetBack'
+                // targetBack will contain the specific filename we just synced.
+                // However, Anki might have renamed it slightly (underscores).
+                // We can check if 'back' contains the text answer AND the image filename.
+                
+                const filename = getImageFilename(card.image);
+                // Variants to check
+                const encodedFilename = encodeURI(filename);
+                const spaceEncodedFilename = filename.replace(/ /g, '%20');
+                const underscoreFilename = filename.replace(/ /g, '_');
+
+                const hasFilename = 
+                  back.includes(filename) || 
+                  back.includes(encodedFilename) || 
+                  back.includes(spaceEncodedFilename) ||
+                  back.includes(underscoreFilename);
+
+                 // Check if the text part of the answer is present (if any)
+                const textPart = card.answer ? card.answer.trim() : '';
+                const hasAnswer = !textPart || back.includes(textPart);
+                const hasImgTag = back.includes('<img');
+
+                if (hasAnswer && hasImgTag && hasFilename) {
+                  isIdentical = true;
+                }
+             } else {
+                 if (back === aTrim) {
+                     isIdentical = true;
+                 }
+             }
+          }
+
+          if (isIdentical) {
+            return { status: 'identical' };
           }
         } catch {
           // If we can't read cached info, fallthrough and attempt update conservatively
@@ -376,13 +424,13 @@ export class AnkiConnector {
         });
         // Invalidate cache if present since we changed a note
         this.noteCache = null;
-        return true;
+        return { status: 'updated' };
       }
 
-      return false;
+      return { status: 'missing' };
     } catch (error) {
       console.log('Could not update existing card:', error);
-      return false;
+      return { status: 'missing' };
     }
   }
 
