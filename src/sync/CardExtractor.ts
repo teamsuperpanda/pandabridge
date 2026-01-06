@@ -37,8 +37,10 @@ export class CardExtractor {
   /**
    * Creates regex patterns for Q&A detection
    */
-  private createQARegex(escQ: string, escA: string): RegExp {
-    return new RegExp(`([*_]{0,2})${escQ}\\s*|([*_]{0,2})${escA}\\s*`, 'gi');
+  private createQARegex(escQ: string, escA: string, escI?: string): RegExp {
+    const parts = [`([*_]{0,2})${escQ}\\s*`, `([*_]{0,2})${escA}\\s*`];
+    if (escI) parts.push(`([*_]{0,2})${escI}\\s*`);
+    return new RegExp(parts.join('|'), 'gi');
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -53,12 +55,15 @@ export class CardExtractor {
       const fullText = container.textContent || '';
       const qTag = plugin?.settings?.questionWord ?? this.settings.questionWord;
       const aTag = plugin?.settings?.answerWord ?? this.settings.answerWord;
+      const iTag = plugin?.settings?.imageWord ?? this.settings.imageWord;
       const escQ = qTag.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&') + ':';
       const escA = aTag.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&') + ':';
+      const escI = iTag.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&') + ':';
 
       if (
         !new RegExp(`[*_]{0,2}${escQ}`).test(fullText) &&
-        !new RegExp(`[*_]{0,2}${escA}`).test(fullText)
+        !new RegExp(`[*_]{0,2}${escA}`).test(fullText) &&
+        !new RegExp(`[*_]{0,2}${escI}`).test(fullText)
       ) {
         return;
       }
@@ -78,7 +83,7 @@ export class CardExtractor {
         const textNode = node as Text;
         if (!isInCode(textNode)) {
           const t = textNode.nodeValue ?? '';
-          if (/(?:[*_]{0,2})Q:|(?:[*_]{0,2})A:/i.test(t)) {
+          if (/(?:[*_]{0,2})Q:|(?:[*_]{0,2})A:|(?:[*_]{0,2})I:/i.test(t)) {
             toUpdate.push(textNode);
           }
         }
@@ -107,7 +112,7 @@ export class CardExtractor {
           }
         };
 
-        const qaRegex = this.createQARegex(escQ, escA);
+        const qaRegex = this.createQARegex(escQ, escA, escI);
         let lastIndex = 0;
         let match;
         while ((match = qaRegex.exec(text)) !== null) {
