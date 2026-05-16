@@ -563,7 +563,7 @@ export class AnkiConnector {
   }
 
   private sleep(ms: number) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+    return new Promise((resolve) => activeWindow.setTimeout(resolve, ms));
   }
 
   private async ankiConnectRequest(

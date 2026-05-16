@@ -115,7 +115,8 @@
 .panda-zap-btn-secondary:hover { background: var(--background-modifier-hover); transform: translateY(-1px); }
 .panda-zap-btn-tertiary { background: transparent; color: var(--text-muted); border-color: var(--background-modifier-border); }
 .panda-zap-btn-tertiary:hover { background: var(--background-modifier-hover); color: var(--text-normal); }
-.panda-zap-btn.disabled { opacity: .55; cursor: not-allowed; transform: none !important; }
+.panda-zap-btn.disabled,
+.panda-zap-btn.disabled:hover { opacity: .55; cursor: not-allowed; transform: none; }
 
 
 .panda-zap-results { margin-top: 16px; }

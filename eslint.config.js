@@ -38,6 +38,8 @@ export default defineConfig([
         setTimeout: 'readonly',
         clearTimeout: 'readonly',
         btoa: 'readonly',
+        activeWindow: 'readonly',
+        activeDocument: 'readonly',
       },
     },
     plugins: {

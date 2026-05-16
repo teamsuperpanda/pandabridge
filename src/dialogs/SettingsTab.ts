@@ -225,8 +225,8 @@ export class PandaZapSettingTab extends PluginSettingTab {
 
     this.connectionResultEl.className = 'panda-zap-connection-result loading';
     const loadingEl = this.connectionResultEl.createDiv('connection-content');
-    loadingEl.createEl('span', { cls: 'connection-icon', text: '⏳' });
-    loadingEl.createEl('span', { cls: 'connection-text', text: 'Testing connection...' });
+    loadingEl.createSpan({ cls: 'connection-icon', text: '⏳' });
+    loadingEl.createSpan({ cls: 'connection-text', text: 'Testing connection...' });
 
     try {
       const isConnected = await this.plugin.testAnkiConnection();
@@ -234,21 +234,21 @@ export class PandaZapSettingTab extends PluginSettingTab {
       if (isConnected) {
         this.connectionResultEl.className = 'panda-zap-connection-result connected';
         const connectedEl = this.connectionResultEl.createDiv('connection-content');
-        connectedEl.createEl('span', { cls: 'connection-icon', text: '✅ ' });
-        connectedEl.createEl('span', { cls: 'connection-text', text: 'Connected to Anki connect' });
-        connectedEl.createEl('span', {
+        connectedEl.createSpan({ cls: 'connection-icon', text: '✅ ' });
+        connectedEl.createSpan({ cls: 'connection-text', text: 'Connected to Anki connect' });
+        connectedEl.createSpan({
           cls: 'connection-details',
           text: `${this.plugin.settings.ankiConnectUrl}:${this.plugin.settings.ankiConnectPort}`,
         });
       } else {
         this.connectionResultEl.className = 'panda-zap-connection-result disconnected';
         const disconnectedEl = this.connectionResultEl.createDiv('connection-content');
-        disconnectedEl.createEl('span', { cls: 'connection-icon', text: '❌ ' });
-        disconnectedEl.createEl('span', {
+        disconnectedEl.createSpan({ cls: 'connection-icon', text: '❌ ' });
+        disconnectedEl.createSpan({
           cls: 'connection-text',
           text: 'Cannot connect to Anki connect',
         });
-        disconnectedEl.createEl('span', {
+        disconnectedEl.createSpan({
           cls: 'connection-details',
           text: 'Make sure Anki is running with Anki connect addon installed',
         });
@@ -257,10 +257,10 @@ export class PandaZapSettingTab extends PluginSettingTab {
       this.connectionResultEl.empty();
       this.connectionResultEl.className = 'panda-zap-connection-result error';
       const errorEl = this.connectionResultEl.createDiv('connection-content');
-      errorEl.createEl('span', { cls: 'connection-icon', text: '⚠️ ' });
-      errorEl.createEl('span', { cls: 'connection-text', text: 'Connection error' });
+      errorEl.createSpan({ cls: 'connection-icon', text: '⚠️ ' });
+      errorEl.createSpan({ cls: 'connection-text', text: 'Connection error' });
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      errorEl.createEl('span', { cls: 'connection-details', text: errorMsg });
+      errorEl.createSpan({ cls: 'connection-details', text: errorMsg });
     }
   }
 }

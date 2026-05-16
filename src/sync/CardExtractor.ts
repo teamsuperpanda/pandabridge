@@ -47,7 +47,7 @@ export class CardExtractor {
     const containers = element.querySelectorAll('p, div, span, li');
 
     containers.forEach((container) => {
-      if (!(container instanceof HTMLElement) || container.classList.contains(CSS_CLASSES.QA_PROCESSED)) {
+      if (!container.instanceOf(HTMLElement) || container.classList.contains(CSS_CLASSES.QA_PROCESSED)) {
         return;
       }
 
@@ -68,14 +68,14 @@ export class CardExtractor {
       }
 
       const isInCode = (n: Node): boolean => {
-        if (!(n instanceof HTMLElement) && !(n instanceof Text)) return false;
-        const el = n instanceof Text ? n.parentElement : n;
+        if (!n.instanceOf(HTMLElement) && !n.instanceOf(Text)) return false;
+        const el = n.instanceOf(Text) ? n.parentElement : n;
         return !!el?.closest('code, pre');
       };
 
       const boldQuestion = plugin?.settings?.boldQuestionInReadingMode ?? true;
 
-      const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+      const walker = container.ownerDocument.createTreeWalker(container, NodeFilter.SHOW_TEXT);
       const toUpdate: Text[] = [];
       let node = walker.nextNode();
       while (node) {
@@ -98,16 +98,16 @@ export class CardExtractor {
 
       const applyTransform = (tn: Text) => {
         const text = tn.nodeValue ?? '';
-        const frag = document.createDocumentFragment();
+        const frag = container.ownerDocument.createDocumentFragment();
 
         const appendSegment = (segment: string, question: boolean) => {
           if (!segment) return;
           if (boldQuestion && question) {
-            const strong = document.createElement('strong');
+            const strong = container.ownerDocument.createElement('strong');
             strong.textContent = segment;
             frag.appendChild(strong);
           } else {
-            frag.appendChild(document.createTextNode(segment));
+            frag.appendChild(container.ownerDocument.createTextNode(segment));
           }
         };
 

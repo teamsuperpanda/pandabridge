@@ -257,9 +257,9 @@ export class SyncModal extends Modal {
         '.panda-zap-button-container'
       );
       const resultContainer = this.contentEl.querySelector('.panda-zap-results');
-      if (summaryContainer instanceof HTMLElement) summaryContainer.classList.add('hidden');
-      if (buttonContainer instanceof HTMLElement) buttonContainer.classList.add('hidden');
-      if (resultContainer instanceof HTMLElement) {
+      if (summaryContainer?.instanceOf(HTMLElement)) summaryContainer.classList.add('hidden');
+      if (buttonContainer?.instanceOf(HTMLElement)) buttonContainer.classList.add('hidden');
+      if (resultContainer?.instanceOf(HTMLElement)) {
         resultContainer.classList.remove('hidden');
         resultContainer.classList.add('visible');
         resultContainer.empty();
@@ -273,7 +273,7 @@ export class SyncModal extends Modal {
       const finalResultContainer = this.contentEl.querySelector(
         '.panda-zap-results'
       );
-      if (!(finalResultContainer instanceof HTMLElement)) return;
+      if (!finalResultContainer?.instanceOf(HTMLElement)) return;
       finalResultContainer.classList.remove('hidden');
       finalResultContainer.classList.add('visible');
       finalResultContainer.empty();
@@ -369,8 +369,8 @@ export class SyncModal extends Modal {
         const buttonContainer = this.contentEl.querySelector(
           '.panda-zap-button-container'
         );
-        if (summaryContainer instanceof HTMLElement) summaryContainer.classList.remove('hidden');
-        if (buttonContainer instanceof HTMLElement) buttonContainer.classList.remove('hidden');
+        if (summaryContainer?.instanceOf(HTMLElement)) summaryContainer.classList.remove('hidden');
+        if (buttonContainer?.instanceOf(HTMLElement)) buttonContainer.classList.remove('hidden');
       } catch {
         // ignore sync error
       }

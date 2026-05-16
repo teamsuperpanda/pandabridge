@@ -9,10 +9,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Use Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: "18"
 
@@ -34,8 +34,8 @@ jobs:
             echo "❌ main.js not found after build"
             exit 1
           fi
-          if [ ! -f "styles/main.css" ]; then
-            echo "❌ styles/main.css not found"
+          if [ ! -f "styles.css" ]; then
+            echo "❌ styles.css not found"
             exit 1
           fi
           echo "✅ Build artifacts verified"
