@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.2] - 2026-05-25
+- Updated dependencies to resolve npm audit vulnerabilities (0 vulnerabilities now)
+- Added overrides for vite, flatted, picomatch, postcss, yaml
+
 ## [1.0.1] - 2026-05-16
 - Cross-window safety: replaced `instanceof` with `.instanceOf()` across SyncModal and CardExtractor
 - Popout window compat: replaced `document.*` with `container.ownerDocument.*` in CardExtractor
