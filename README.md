@@ -1,105 +1,131 @@
 # ⚡ Panda Zap
 
-Turn Obsidian notes into Anki flashcards. Panda Zap extracts Q/A pairs from Markdown and syncs them to Anki via AnkiConnect. You can preview adds, updates, and deletions before anything is written to your Anki collection.
+<p>
+  <img src="https://img.shields.io/badge/version-1.0.2-blue?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License">
+  <img src="https://img.shields.io/badge/status-stable-brightgreen?style=flat-square" alt="Status">
+  <img src="https://img.shields.io/badge/desktop--only-8B5CF6?style=flat-square" alt="Desktop Only">
+</p>
 
-This README is a concise user guide; developer notes and extended examples are in `docs/`.
+Turn Obsidian notes into Anki flashcards. Panda Zap extracts Q/A pairs from Markdown and syncs them to Anki via AnkiConnect - with full preview of adds, updates, and deletions before anything touches your collection.
 
-— Desktop only (requires Anki + AnkiConnect) —
+> Desktop only. Requires Anki + AnkiConnect.
 
-## Key features
+---
 
-- Extracts Q/A pairs using simple, configurable labels (defaults: `Q:` and `A:`).
-- Preview adds, updates, and removals before syncing.
-- Deck targeting:
-	- Global default deck (plugin setting)
-	- Note‑based decks that mirror `folder::NoteName`
-	- Per‑note override via a first‑line header: `Deck::my/deck` (slashes normalized to Anki's `::` format)
-- Creates and updates notes only as Basic (Front / Back) cards. The plugin requires a Basic note type or any model exposing fields named `Front` and `Back`.
-- Quick connection test and status in the sync dialog.
+## Features
+
+| | |
+|---|---|
+| **Q/A Extraction** | Simple, configurable labels (`Q:` / `A:`). Bold/italic around labels is stripped automatically. |
+| **Preview before sync** | See exactly what will be added, updated, or removed. |
+| **Deck targeting** | Global default deck, note‑based (`folder::NoteName`), or per‑note override via `Deck::my/deck`. |
+| **Basic card model** | Creates and updates Basic (Front / Back) notes. Works with any model exposing `Front` and `Back`. |
+| **Connection test** | Quick status check in the sync dialog. |
+
+---
 
 ## Requirements
 
-- Obsidian on desktop
-- Anki desktop app
-- AnkiConnect add‑on (code 2055492159): https://ankiweb.net/shared/info/2055492159
+- **Obsidian** - desktop app
+- **Anki** - desktop app
+- **AnkiConnect** - [add-on 2055492159](https://ankiweb.net/shared/info/2055492159)
+
+---
 
 ## Quick start
 
-1. Install Anki and AnkiConnect, then keep Anki running.
-2. Install and enable Panda Zap plugin in Obsidian.
+1. Install **Anki** and **AnkiConnect**, then keep Anki running.
+2. Install and enable **Panda Zap** in Obsidian.
 3. In a note, write cards using Q/A:
 
-	 ```markdown
-	 Q: What is the capital of France? A: Paris
-	 Q: What year did World War II end? A: 1945
-	 ```
-4. Click the ⚡ ribbon icon (Zap) to open the sync dialog, review the preview, and sync.
+   ```markdown
+   Q: What is the capital of France? A: Paris
+   Q: What year did World War II end? A: 1945
+   ```
 
-Note: Preview and full analysis that detects existing Anki notes rely on a working AnkiConnect connection; for accurate add/update/delete suggestions keep Anki running with AnkiConnect enabled when using Preview or Sync.
+4. Click the ⚡ **Zap** ribbon icon to open the sync dialog, review the preview, and sync.
 
-## Writing cards (essentials)
+> Preview and full analysis rely on a working AnkiConnect connection. Keep Anki running for accurate add/update/delete suggestions.
 
-- Supported model: Basic only (for now...). The plugin creates and updates notes using `Front` and `Back` fields. Use Anki's Basic model (or another model that exposes `Front` and `Back`) to ensure compatibility.
+---
 
-- Labels are case‑insensitive and must be followed by a colon: `Q:` and `A:`.
+## Writing cards
 
-- Single‑line: `Q: [question] A: [answer]`.
+**Model** - Basic only (uses `Front` and `Back` fields). Cloze and other types are not supported.
 
-- Images: `I: [[image.png]]` or `I: ![Alt](image.png)`. Attach images to the Answer field (Back of card).
+**Labels** - Case‑insensitive, must be followed by a colon: `Q:` / `A:`.
 
-- Formatting: bold or italic around labels is allowed — the extractor strips `*` and `_`.
+| Format | Example |
+|---|---|
+| Single‑line | `Q: question A: answer` |
+| Images | `I: [[image.png]]` or `I: ![Alt](image.png)` - attached to the Answer field. |
+| Formatting | Bold/italic around labels (`*Q:*`, `_A:_`) is stripped. |
+| Deck override | `Deck::my/deck` on the first line (slashes → Anki's `::`). |
 
-- Avoid Q/A inside fenced code blocks or YAML frontmatter.
+> Avoid Q/A inside fenced code blocks or YAML frontmatter.
 
-- Deck override: place `Deck::my/deck` on the first line to target a specific deck for that note (slashes are normalized to Anki's `::`).
+More examples: [`docs/writing-cards.md`](docs/writing-cards.md)
 
-Important: Cloze and other non‑Basic models are not supported. The plugin does not construct cloze deletions or map arbitrary fields.
-
-More examples: `docs/writing-cards.md`.
+---
 
 ## How syncing works
 
-1. The plugin extracts Q/A pairs from the active note.
-2. It analyzes existing Anki notes to decide what to add, update, or remove.
-3. You can preview all changes in a modal before syncing.
-4. If note‑based decks are enabled, the plugin can also detect cards previously made from the same note that no longer exist and ask to delete them from Anki (with confirmation).
+1. Plugin extracts Q/A pairs from the active note.
+2. It analyses existing Anki notes to decide what to add, update, or remove.
+3. Preview all changes in a modal before syncing.
+4. With note‑based decks enabled, the plugin can detect removed cards and ask to delete them from Anki (with confirmation).
 
-Notes
-- Communication is via AnkiConnect’s local HTTP API. Keep Anki open.
+> Communication is via AnkiConnect's local HTTP API. Keep Anki open.
 
-## Settings (at a glance)
+---
 
-- Anki Connect URL and Port (defaults: `http://127.0.0.1` and `8765`).
-- Default Deck.
-- Use Note‑based Decks (mirror `folder::NoteName`).
-- Deck Override Word (first‑line prefix, default `Deck`).
-- Question/Answer Words (defaults `Q` / `A`).
- - Note Type (must be `Basic` — the plugin uses `Front` and `Back` fields).
- - Bold Question in Reading Mode (presentation only).
+## Settings
 
-Details: `docs/settings.md`.
+| Setting | Default | Notes |
+|---|---|---|
+| Anki Connect URL | `http://127.0.0.1` | |
+| Anki Connect Port | `8765` | |
+| Default Deck | - | Global fallback |
+| Note‑based Decks | off | Mirrors `folder::NoteName` |
+| Deck Override Word | `Deck` | First‑line prefix |
+| Question Word | `Q` | |
+| Answer Word | `A` | |
+| Note Type | `Basic` | Uses `Front` / `Back` fields |
+| Bold Question in Reading Mode | on | Presentation only |
+
+Details: [`docs/settings.md`](docs/settings.md)
+
+---
 
 ## Troubleshooting
 
-- “Not connected to Anki” → Ensure Anki is open and AnkiConnect is installed; check host/port.
-- “Duplicate” errors → The note likely already exists; the plugin will skip when safe.
-- Missing cards → Confirm your Q/A lines aren’t inside code blocks or frontmatter.
-- See Obsidian’s Dev Console (Ctrl/Cmd+Shift+I) for error messages.
+| Symptom | Cause / Fix |
+|---|---|
+| "Not connected to Anki" | Ensure Anki is open and AnkiConnect is installed. Check host/port. |
+| "Duplicate" errors | Note likely already exists. The plugin skips when safe. |
+| Missing cards | Confirm Q/A lines aren't inside code blocks or frontmatter. |
+| Other issues | Open Obsidian Dev Console (`Ctrl/Cmd+Shift+I`) for error messages. |
 
-If you’re stuck, please open a GitHub issue with a small repro (a few lines of the note) and any console output.
+If you're stuck, open a GitHub issue with a small repro (a few lines of the note) and any console output.
+
+---
 
 ## Privacy & security
 
-Panda Zap talks to AnkiConnect over HTTP (default `http://127.0.0.1:8765`). See `PRIVACY.md` for full details. In brief, the plugin may transmit the following to the configured AnkiConnect host:
+Panda Zap communicates with AnkiConnect over HTTP (`http://127.0.0.1:8765` by default). See [`PRIVACY.md`](PRIVACY.md) for full details.
 
+Data transmitted to the configured AnkiConnect host:
 - Full note content (for analysis and sync)
-- Note path / filename (used when note-based decks are enabled)
-- Card fields (`Front` and `Back`) and the target deck/model names
+- Note path / filename (with note‑based decks)
+- Card fields (`Front`, `Back`) and target deck/model names
 
-By default the plugin connects to localhost only. If you point the plugin to a remote host you are responsible for securing that transport (for example using an SSH tunnel or VPN). This plugin collects no telemetry (see `PRIVACY.md`).
+By default the plugin connects to **localhost only**. If pointing to a remote host, secure the transport (SSH tunnel, VPN). This plugin collects **no telemetry**.
+
+---
 
 ## License
 
-MIT — see `LICENSE`.
+PolyForm Noncommercial 1.0.0 - see [`LICENSE`](LICENSE). Free for hobby, personal, educational, and noncommercial use. Commercial use, rebranding, or resale is not permitted.
 
-
+Developer notes and extended examples: [`docs/`](docs/).

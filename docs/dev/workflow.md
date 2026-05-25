@@ -20,7 +20,7 @@ Simple workflow: all work happens directly on `main` branch.
    ```bash
    npm test
    npm run build
-   npm run validate-manifest
+   npm run lint
    git add .
    git commit -m "your changes"
    git push
@@ -35,13 +35,13 @@ Simple workflow: all work happens directly on `main` branch.
 
 ## Continuous Integration
 
-- **CI runs on**: pushes to main
+- **CI runs on**: pull requests targeting `main`
 - **Release builds on**: version tags (`v*`)
-- **Tests include**: TypeScript check, unit tests, build verification, manifest validation
+- **Tests include**: TypeScript check, unit tests, build verification
 
 ## Release Artifacts
 
 Each release includes:
 - `main.js` - Compiled plugin
-- `manifest.json` - Plugin metadata  
-- `styles/` - CSS files
+- `manifest.json` - Plugin metadata
+- `styles.css` - CSS styles

@@ -1,4 +1,4 @@
-# Test Suite Implementation for PandaZap Obsidian Plugin
+# Testing
 
 ## Overview
 This project includes a small, focused test suite for core extraction and type utilities using Vitest. Tests emphasize the extraction logic (which is framework-independent) and basic type/defaults validation.

@@ -82,7 +82,7 @@ Example (Image only):
 ## What is not supported
 
 - Cloze deletions or Cloze note types are not supported. Do not expect `{{c1::...}}` style generation.
-- Arbitrary field mappings — the plugin only writes `Front` and `Back`.
+- Arbitrary field mappings - the plugin only writes `Front` and `Back`.
 
 ## Tips
 

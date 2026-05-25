@@ -34,12 +34,12 @@ npm install
 npm run build
 ```
 
-3. Copy the built plugin into your vault's plugin folder. The destination should contain the plugin's `manifest.json`, `main.js`, and `styles`:
+3. Copy the built plugin into your vault's plugin folder:
 
 ```bash
 # Replace /path/to/your/vault with your vault path
 mkdir -p /path/to/your/vault/.obsidian/plugins/panda-zap
-cp -r dist/* /path/to/your/vault/.obsidian/plugins/panda-zap/
+cp main.js manifest.json styles.css /path/to/your/vault/.obsidian/plugins/panda-zap/
 ```
 
 4. In Obsidian: Settings → Community plugins → Installed plugins → enable "Panda Zap".

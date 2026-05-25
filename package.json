@@ -9,7 +9,7 @@
     "url": "https://github.com/teamsuperpanda/pandazap"
   },
   "homepage": "https://github.com/teamsuperpanda/pandazap",
-  "license": "MIT",
+  "license": "PolyForm-Noncommercial-1.0.0",
   "scripts": {
     "build": "node esbuild.config.mjs production",
     "version": "node version-bump.mjs && git add manifest.json versions.json",
