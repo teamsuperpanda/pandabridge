@@ -97,6 +97,7 @@ export class CardExtractor {
       let inQuestion = false;
 
       const applyTransform = (tn: Text) => {
+        const parent = tn.parentNode;
         const text = tn.nodeValue ?? '';
         const frag = container.ownerDocument.createDocumentFragment();
 
@@ -131,9 +132,19 @@ export class CardExtractor {
           appendSegment(text.slice(lastIndex), inQuestion);
         }
 
-        if (frag.childNodes.length > 0 && frag.textContent !== text) {
+        if (frag.textContent !== text) {
           tn.replaceWith(frag);
           changed = true;
+          let el = parent instanceof HTMLElement ? parent : null;
+          while (
+            el &&
+            el.childNodes.length === 0 &&
+            !['P', 'DIV', 'LI'].includes(el.tagName)
+          ) {
+            const next = el.parentNode instanceof HTMLElement ? el.parentNode : null;
+            el.remove();
+            el = next;
+          }
         }
       };
 

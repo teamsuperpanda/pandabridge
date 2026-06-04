@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.3] - 2026-06-04
+- Fixed `**Q:**` and `**A:**` (bold labels) not being hidden in reading view
+- Clean up empty wrapper elements after stripping Q/A labels
+
 ## [1.0.2] - 2026-05-25
 - Updated dependencies to resolve npm audit vulnerabilities (0 vulnerabilities now)
 - Added overrides for vite, flatted, picomatch, postcss, yaml
