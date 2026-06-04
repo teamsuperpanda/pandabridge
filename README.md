@@ -1,7 +1,7 @@
 # ⚡ Panda Zap
 
 <p>
-  <img src="https://img.shields.io/badge/version-1.0.2-blue?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/github/v/release/teamsuperpanda/pandazap?style=flat-square" alt="Version">
   <img src="https://img.shields.io/badge/license-PolyForm%20Noncommercial-blue?style=flat-square" alt="License">
   <img src="https://img.shields.io/badge/status-stable-brightgreen?style=flat-square" alt="Status">
   <img src="https://img.shields.io/badge/desktop--only-8B5CF6?style=flat-square" alt="Desktop Only">
