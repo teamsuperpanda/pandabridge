@@ -50,6 +50,63 @@ function parseImagePath(text: string): string | null {
 }
 
 /**
+ * Converts markdown lists (unordered and ordered) to HTML list elements
+ */
+function convertMarkdownListsToHtml(text: string): string {
+  if (!text) return text;
+  const lines = text.split('\n');
+  const result: string[] = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    // Unordered list: lines starting with "- " or "* "
+    const ulMatch = line.match(/^[-*]\s+(.*)/);
+    if (ulMatch) {
+      const items: string[] = [ulMatch[1]];
+      i++;
+      while (i < lines.length) {
+        const nextMatch = lines[i].match(/^[-*]\s+(.*)/);
+        if (!nextMatch) break;
+        items.push(nextMatch[1]);
+        i++;
+      }
+      result.push('<ul>');
+      for (const item of items) {
+        result.push(`<li>${item}</li>`);
+      }
+      result.push('</ul>');
+      continue;
+    }
+
+    // Ordered list: lines starting with digit(s). and space
+    const olMatch = line.match(/^\d+\.\s+(.*)/);
+    if (olMatch) {
+      const items: string[] = [olMatch[1]];
+      i++;
+      while (i < lines.length) {
+        const nextMatch = lines[i].match(/^\d+\.\s+(.*)/);
+        if (!nextMatch) break;
+        items.push(nextMatch[1]);
+        i++;
+      }
+      result.push('<ol>');
+      for (const item of items) {
+        result.push(`<li>${item}</li>`);
+      }
+      result.push('</ol>');
+      continue;
+    }
+
+    result.push(line);
+    i++;
+  }
+
+  return result.join('\n');
+}
+
+/**
  * Extracts Q&A cards from text content
  * @param content The text content to extract cards from
  * @param settings Plugin settings containing question/answer words
@@ -78,7 +135,12 @@ export function extractQACardsFromText(content: string, settings: PandaZapSettin
     const iStartRegex = new RegExp(`^(?:[*_]{0,2})${escI}\\s*(.*)`, 'i');
 
     for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
+      let line = lines[i];
+
+      // Strip blockquote/callout markers
+      const cleanedLine = line.replace(/^> ?/, '');
+      if (/^\[!/.test(cleanedLine)) continue;
+      line = cleanedLine;
 
       // 1. Single-line check
       // Check for: Q: ... A: ... I: ... (all on one line)
@@ -90,7 +152,7 @@ export function extractQACardsFromText(content: string, settings: PandaZapSettin
       if (matchAll) {
         cards.push({
           question: matchAll[1].replace(/[*_]+/g, '').trim(),
-          answer: matchAll[2].replace(/[*_]+/g, '').trim(),
+          answer: convertMarkdownListsToHtml(matchAll[2].replace(/[*_]+/g, '').trim()),
           image: parseImagePath(matchAll[3]) || undefined,
           line: i + 1,
         });
@@ -132,7 +194,7 @@ export function extractQACardsFromText(content: string, settings: PandaZapSettin
         if (!iPattern.test(possibleAnswer)) {
           cards.push({
             question: matchQA[1].replace(/[*_]+/g, '').trim(),
-            answer: possibleAnswer.replace(/[*_]+/g, '').trim(),
+            answer: convertMarkdownListsToHtml(possibleAnswer.replace(/[*_]+/g, '').trim()),
             line: i + 1,
           });
           continue;
@@ -156,7 +218,15 @@ export function extractQACardsFromText(content: string, settings: PandaZapSettin
         // Scan ahead
         let j = i + 1;
         while (j < lines.length) {
-          const nextLine = lines[j];
+          let nextLine = lines[j];
+
+          // Strip blockquote/callout markers
+          const cleanedNextLine = nextLine.replace(/^> ?/, '');
+          if (/^\[!/.test(cleanedNextLine)) {
+            j++;
+            continue;
+          }
+          nextLine = cleanedNextLine;
 
           // Stop on blank line (end of card)
           if (nextLine.trim() === '') break;
@@ -209,7 +279,7 @@ export function extractQACardsFromText(content: string, settings: PandaZapSettin
         if (hasAnswer || imagePath) {
           cards.push({
             question: questionText.replace(/[*_]+/g, '').trim(),
-            answer: answerLines.join('\n').trim(),
+            answer: convertMarkdownListsToHtml(answerLines.join('\n').trim()),
             image: imagePath || undefined,
             line: i + 1,
           });

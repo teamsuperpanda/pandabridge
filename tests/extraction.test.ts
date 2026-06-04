@@ -79,7 +79,7 @@ It was created by Facebook`;
 
     expect(cards).toHaveLength(1);
     expect(cards[0].question).toBe('What are the types of fruit?');
-    expect(cards[0].answer).toBe('- Apple\n- Banana\n- Orange');
+    expect(cards[0].answer).toBe('<ul>\n<li>Apple</li>\n<li>Banana</li>\n<li>Orange</li>\n</ul>');
   });
 
   it('should capture tables after Q: without explicit A:', () => {
@@ -106,7 +106,7 @@ It was created by Facebook`;
 
     expect(cards).toHaveLength(1);
     expect(cards[0].question).toBe('Key features?');
-    expect(cards[0].answer).toBe('- Fast\n- Reliable\n- Scalable');
+    expect(cards[0].answer).toBe('<ul>\n<li>Fast</li>\n<li>Reliable</li>\n<li>Scalable</li>\n</ul>');
   });
 
   it('should capture mixed content after Q: as answer', () => {
@@ -119,6 +119,85 @@ It was created by Facebook`;
 
     expect(cards).toHaveLength(1);
     expect(cards[0].question).toBe('Steps to deploy');
-    expect(cards[0].answer).toBe('1. Build the app\n2. Run tests\n3. Deploy to server');
+    expect(cards[0].answer).toBe('<ol>\n<li>Build the app</li>\n<li>Run tests</li>\n<li>Deploy to server</li>\n</ol>');
+  });
+
+  it('should strip callout markers and skip callout headers', () => {
+    const content = `> [!question]
+> Q: What is the capital of France?
+> A: Paris`;
+
+    const cards = extractQACardsFromText(content, defaultSettings);
+
+    expect(cards).toHaveLength(1);
+    expect(cards[0].question).toBe('What is the capital of France?');
+    expect(cards[0].answer).toBe('Paris');
+  });
+
+  it('should convert unordered list (-) to HTML', () => {
+    const content = `Q: What are fruits?
+A:
+- Apple
+- Banana
+- Orange`;
+
+    const cards = extractQACardsFromText(content, defaultSettings);
+
+    expect(cards).toHaveLength(1);
+    expect(cards[0].question).toBe('What are fruits?');
+    expect(cards[0].answer).toBe('<ul>\n<li>Apple</li>\n<li>Banana</li>\n<li>Orange</li>\n</ul>');
+  });
+
+  it('should convert unordered list (*) to HTML', () => {
+    const content = `Q: Key features?
+* Fast
+* Reliable
+* Scalable`;
+
+    const cards = extractQACardsFromText(content, defaultSettings);
+
+    expect(cards).toHaveLength(1);
+    expect(cards[0].question).toBe('Key features?');
+    expect(cards[0].answer).toBe('<ul>\n<li>Fast</li>\n<li>Reliable</li>\n<li>Scalable</li>\n</ul>');
+  });
+
+  it('should convert ordered list to HTML', () => {
+    const content = `Q: Process
+1. Plan
+2. Execute
+3. Review`;
+
+    const cards = extractQACardsFromText(content, defaultSettings);
+
+    expect(cards).toHaveLength(1);
+    expect(cards[0].question).toBe('Process');
+    expect(cards[0].answer).toBe('<ol>\n<li>Plan</li>\n<li>Execute</li>\n<li>Review</li>\n</ol>');
+  });
+
+  it('should handle mixed content with text before and after list', () => {
+    const content = `Q: Describe the process
+First, you need to prepare.
+- Gather materials
+- Set up workspace
+Then you can begin.`;
+
+    const cards = extractQACardsFromText(content, defaultSettings);
+
+    expect(cards).toHaveLength(1);
+    expect(cards[0].question).toBe('Describe the process');
+    expect(cards[0].answer).toBe('First, you need to prepare.\n<ul>\n<li>Gather materials</li>\n<li>Set up workspace</li>\n</ul>\nThen you can begin.');
+  });
+
+  it('should handle Q&A inside callout blocks (George Thomas example)', () => {
+    const content = `> [!question] George Thomas
+> Q: Who was George Thomas?
+> A: An American general known as the "Rock of Chickamauga"
+> He served in the Union Army during the Civil War`;
+
+    const cards = extractQACardsFromText(content, defaultSettings);
+
+    expect(cards).toHaveLength(1);
+    expect(cards[0].question).toBe('Who was George Thomas?');
+    expect(cards[0].answer).toBe('An American general known as the "Rock of Chickamauga"\nHe served in the Union Army during the Civil War');
   });
 });
