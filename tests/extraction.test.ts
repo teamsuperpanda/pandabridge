@@ -236,4 +236,23 @@ Then you can begin.`;
     expect(cards[2].question).toBe('What is C?');
     expect(cards[2].answer).toBe('<ul>\n<li>In 1805 A.D., William Franklin published a book titled Military Memoirs of George Thomas.</li>\n<li>He is also known as "Jahazi Firangi."</li>\n</ul>');
   });
+
+  it('should convert nested lists with tab indentation to nested HTML', () => {
+    const content = `Q: Nested list example
+A:
+- One
+\t- Two
+\t\t- Three
+- Four
+\t- Five
+\t\t- Six`;
+
+    const cards = extractQACardsFromText(content, defaultSettings);
+
+    expect(cards).toHaveLength(1);
+    expect(cards[0].question).toBe('Nested list example');
+    expect(cards[0].answer).toBe(
+      '<ul>\n<li>One\n<ul>\n<li>Two\n<ul>\n<li>Three</li>\n</ul>\n</li>\n</ul>\n</li>\n<li>Four\n<ul>\n<li>Five\n<ul>\n<li>Six</li>\n</ul>\n</li>\n</ul>\n</li>\n</ul>'
+    );
+  });
 });

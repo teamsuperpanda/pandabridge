@@ -50,7 +50,8 @@ function parseImagePath(text: string): string | null {
 }
 
 /**
- * Converts markdown lists (unordered and ordered) to HTML list elements
+ * Converts markdown lists (unordered and ordered) to HTML list elements.
+ * Supports nested lists via indentation (tabs or 2-space units).
  */
 function convertMarkdownListsToHtml(text: string): string {
   if (!text) return text;
@@ -58,48 +59,74 @@ function convertMarkdownListsToHtml(text: string): string {
   const result: string[] = [];
   let i = 0;
 
+  function getDepth(indent: string): number {
+    if (indent.includes('\t')) return indent.length;
+    return indent.length > 0 ? Math.floor(indent.length / 2) : 0;
+  }
+
+  function renderNestedList(
+    items: { depth: number; isOrdered: boolean; content: string }[],
+    startIdx: number,
+    parentDepth: number,
+  ): { html: string; endIdx: number } {
+    if (startIdx >= items.length || items[startIdx].depth <= parentDepth) {
+      return { html: '', endIdx: startIdx };
+    }
+
+    const type = items[startIdx].isOrdered ? 'ol' : 'ul';
+    const parts: string[] = [`<${type}>`];
+    let idx = startIdx;
+
+    while (idx < items.length) {
+      const item = items[idx];
+      if (item.depth <= parentDepth) break;
+
+      if (item.depth === parentDepth + 1) {
+        let nestedHtml = '';
+        if (idx + 1 < items.length && items[idx + 1].depth > item.depth) {
+          const nested = renderNestedList(items, idx + 1, item.depth);
+          nestedHtml = nested.html;
+          idx = nested.endIdx;
+        } else {
+          idx++;
+        }
+
+        if (nestedHtml) {
+          parts.push(`<li>${item.content}\n${nestedHtml}\n</li>`);
+        } else {
+          parts.push(`<li>${item.content}</li>`);
+        }
+      } else {
+        idx++;
+      }
+    }
+
+    parts.push(`</${type}>`);
+    return { html: parts.join('\n'), endIdx: idx };
+  }
+
   while (i < lines.length) {
-    const line = lines[i];
-
-    // Unordered list: lines starting with "- " or "* "
-    const ulMatch = line.match(/^[-*]\s+(.*)/);
-    if (ulMatch) {
-      const items: string[] = [ulMatch[1]];
-      i++;
+    const listMatch = lines[i].match(/^(\s*)([-*]|\d+\.)\s+(.*)/);
+    if (listMatch) {
+      const items: { depth: number; isOrdered: boolean; content: string }[] = [];
       while (i < lines.length) {
-        const nextMatch = lines[i].match(/^[-*]\s+(.*)/);
-        if (!nextMatch) break;
-        items.push(nextMatch[1]);
+        const m = lines[i].match(/^(\s*)([-*]|\d+\.)\s+(.*)/);
+        if (!m) break;
+        items.push({
+          depth: getDepth(m[1]),
+          isOrdered: /^\d+\.$/.test(m[2]),
+          content: m[3],
+        });
         i++;
       }
-      result.push('<ul>');
-      for (const item of items) {
-        result.push(`<li>${item}</li>`);
+      if (items.length > 0) {
+        const { html } = renderNestedList(items, 0, -1);
+        result.push(html);
       }
-      result.push('</ul>');
       continue;
     }
 
-    // Ordered list: lines starting with digit(s). and space
-    const olMatch = line.match(/^\d+\.\s+(.*)/);
-    if (olMatch) {
-      const items: string[] = [olMatch[1]];
-      i++;
-      while (i < lines.length) {
-        const nextMatch = lines[i].match(/^\d+\.\s+(.*)/);
-        if (!nextMatch) break;
-        items.push(nextMatch[1]);
-        i++;
-      }
-      result.push('<ol>');
-      for (const item of items) {
-        result.push(`<li>${item}</li>`);
-      }
-      result.push('</ol>');
-      continue;
-    }
-
-    result.push(line);
+    result.push(lines[i]);
     i++;
   }
 
