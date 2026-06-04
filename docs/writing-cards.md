@@ -65,6 +65,8 @@ Deck::Biology/Plants
 Q: What organelle performs photosynthesis? A: Chloroplast
 ```
 
+**Multiple files, same deck**  --  If several notes target the same deck (via `Deck::` or folder path), their cards are merged into one deck. Each file's cards are tracked independently: deleting cards from one file never touches cards from another file that shares the deck.
+
 Setting "Use Note‑Based Decks" off means folder‑based naming is skipped  --  notes go to the Default Deck (unless they have an explicit `Deck::` override).
 
 5) Small formatting notes

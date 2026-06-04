@@ -146,7 +146,7 @@ export function extractQACardsFromText(content: string, settings: PandaZapSettin
         // Strip trailing A:/I: label that might be on the Q line (e.g. "Q: What? A:")
         const aLabelRegex = new RegExp(`\\s*(?:[*_]{0,2})${escA}\\s*$`, 'i');
         const iLabelRegex = new RegExp(`\\s*(?:[*_]{0,2})${escI}\\s*$`, 'i');
-        let questionText = qMatch[1].replace(aLabelRegex, '').replace(iLabelRegex, '').trim();
+        const questionText = qMatch[1].replace(aLabelRegex, '').replace(iLabelRegex, '').trim();
         const answerLines: string[] = [];
         let imagePath: string | undefined = undefined;
         let hasAnswer = false;
