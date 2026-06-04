@@ -200,4 +200,40 @@ Then you can begin.`;
     expect(cards[0].question).toBe('Who was George Thomas?');
     expect(cards[0].answer).toBe('An American general known as the "Rock of Chickamauga"\nHe served in the Union Army during the Civil War');
   });
+
+  it('should handle nested callout blocks with lists in answers', () => {
+    const content = `> [!NOTE]-
+> George Thomas
+>
+> > [!question]- What is A?
+> > Q: What is A?
+> > A:
+> > - George Thomas was from Ireland.
+> > - He was a mercenary commander for the Marathas.
+>
+> > [!question]- What is B?
+> > Q: What is B?
+> > A:
+> > - He attacked Jaipur, Udaipur, and Bikaner.
+> > - In 1800 A.D., he used the term "Rajputana" for the Rajasthan region for the first time.
+>
+> > [!question]- What is C?
+> > Q: What is C?
+> > A:
+> > - In 1805 A.D., William Franklin published a book titled Military Memoirs of George Thomas.
+> > - He is also known as "Jahazi Firangi."`;
+
+    const cards = extractQACardsFromText(content, defaultSettings);
+
+    expect(cards).toHaveLength(3);
+
+    expect(cards[0].question).toBe('What is A?');
+    expect(cards[0].answer).toBe('<ul>\n<li>George Thomas was from Ireland.</li>\n<li>He was a mercenary commander for the Marathas.</li>\n</ul>');
+
+    expect(cards[1].question).toBe('What is B?');
+    expect(cards[1].answer).toBe('<ul>\n<li>He attacked Jaipur, Udaipur, and Bikaner.</li>\n<li>In 1800 A.D., he used the term "Rajputana" for the Rajasthan region for the first time.</li>\n</ul>');
+
+    expect(cards[2].question).toBe('What is C?');
+    expect(cards[2].answer).toBe('<ul>\n<li>In 1805 A.D., William Franklin published a book titled Military Memoirs of George Thomas.</li>\n<li>He is also known as "Jahazi Firangi."</li>\n</ul>');
+  });
 });

@@ -137,8 +137,8 @@ export function extractQACardsFromText(content: string, settings: PandaZapSettin
     for (let i = 0; i < lines.length; i++) {
       let line = lines[i];
 
-      // Strip blockquote/callout markers
-      const cleanedLine = line.replace(/^> ?/, '');
+      // Strip blockquote/callout markers (handle nested callouts > >)
+      const cleanedLine = line.replace(/^(?:> ?)+/, '');
       if (/^\[!/.test(cleanedLine)) continue;
       line = cleanedLine;
 
@@ -220,8 +220,8 @@ export function extractQACardsFromText(content: string, settings: PandaZapSettin
         while (j < lines.length) {
           let nextLine = lines[j];
 
-          // Strip blockquote/callout markers
-          const cleanedNextLine = nextLine.replace(/^> ?/, '');
+          // Strip blockquote/callout markers (handle nested callouts > >)
+          const cleanedNextLine = nextLine.replace(/^(?:> ?)+/, '');
           if (/^\[!/.test(cleanedNextLine)) {
             j++;
             continue;
