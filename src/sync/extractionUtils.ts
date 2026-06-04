@@ -143,7 +143,10 @@ export function extractQACardsFromText(content: string, settings: PandaZapSettin
       const qMatch = line.match(qStartRegex);
       if (qMatch) {
         // Start of Q block
-        const questionText = qMatch[1];
+        // Strip trailing A:/I: label that might be on the Q line (e.g. "Q: What? A:")
+        const aLabelRegex = new RegExp(`\\s*(?:[*_]{0,2})${escA}\\s*$`, 'i');
+        const iLabelRegex = new RegExp(`\\s*(?:[*_]{0,2})${escI}\\s*$`, 'i');
+        let questionText = qMatch[1].replace(aLabelRegex, '').replace(iLabelRegex, '').trim();
         const answerLines: string[] = [];
         let imagePath: string | undefined = undefined;
         let hasAnswer = false;
@@ -192,8 +195,11 @@ export function extractQACardsFromText(content: string, settings: PandaZapSettin
               imagePath = parseImagePath(nextLine);
             }
           } else if (currentMode === 'none') {
-            // Content before any A: or I:.
-            break;
+            // Treat content after Q: as answer even without explicit A: label.
+            // This supports bullet lists, tables, etc. after the question.
+            currentMode = 'answer';
+            hasAnswer = true;
+            answerLines.push(nextLine);
           }
 
           j++;

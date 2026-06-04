@@ -24,36 +24,55 @@ Place both the question and answer on one line.
 
 2) Multi‑line answer
 
-Place the `Q:` on one line and the `A:` on the next. The answer continues until a blank line or the next `Q:` or `A:` label. It's valid for the `A:` line to be empty (just `A:`); in that case the following non-empty lines are included until a blank line or a new label is encountered.
+Place the `Q:` on one line and the answer on subsequent lines. The answer continues until a blank line or the next `Q:` label. You can use an explicit `A:` line or omit it - any content after `Q:` is treated as the answer. This supports bullet lists, tables, numbered steps, and paragraph text.
+
+    ```markdown
+    Q: What are the types of fruit?
+    - Apple
+    - Banana
+    - Orange
+
+    Q: Conversion rates
+    | From | To | Rate |
+    | --- | --- | --- |
+    | USD | EUR | 0.85 |
+    | EUR | USD | 1.18 |
+    ```
+
+An explicit `A:` (or `I:`) label can still be used to clearly mark the start of the answer:
 
     ```markdown
     Q: Explain photosynthesis
     A:
     Photosynthesis is the process by which plants convert light energy into chemical energy.
     It occurs in chloroplasts and involves chlorophyll.
-
-    Q: Next question? A: Short answer
     ```
 
 3) Multiple cards in one note
 
 Write multiple `Q:` / `A:` pairs in the same note. Each pair becomes a separate Basic card.
 
-4) Deck override
+4) Deck targeting (priority order)
 
-Add a first line like `Deck::my/deck/name` to explicitly set the target deck for that note. This per-note override is honored regardless of the "Use Note‑Based Decks" setting. Any slashes in the override are normalized to Anki's `::` nested-deck separator.
+Panda Zap determines the target Anki deck using this priority:
 
-    ```
-    Deck::Biology/Plants
-    Q: What organelle performs photosynthesis? A: Chloroplast
-    ```
+   1. **Explicit override**  --  If the first line is `Deck::some/deck`, that deck is used. Slashes become Anki's `::` separator. This works regardless of any other setting.
+   2. **Folder‑based**  --  If "Use Note‑Based Decks" is enabled and no override is present, the deck is built from the note's folder path + filename. For example, `Biology/Plants/Photosynthesis.md` → deck `Biology::Plants::Photosynthesis`.
+   3. **Default deck**  --  If neither override nor folder‑based naming applies, the plugin falls back to the **Default Deck** setting.
+
+```
+Deck::Biology/Plants
+Q: What organelle performs photosynthesis? A: Chloroplast
+```
+
+Setting "Use Note‑Based Decks" off means folder‑based naming is skipped  --  notes go to the Default Deck (unless they have an explicit `Deck::` override).
 
 5) Small formatting notes
 
 - Surrounding `*` or `_` around the `Q:`/`A:` labels is accepted by the extractor (so `*Q:*` or `_A:_` will match). The extractor strips surrounding asterisks/underscores from the captured question/answer text.
 - Leading/trailing whitespace around questions and answers is trimmed.
 
-Note: If a `Q:` is present without a matching `A:` on the same line or in the following lines (before the next label or a blank line), no card will be produced for that question, UNLESS an image tag (`I:`) is present.
+Note: A `Q:` with no content after it (blank line or end of note) produces no card. If an `A:` line is present but empty, the following non-blank lines are captured as the answer. An image tag (`I:`) alone (without `A:`) also produces a card.
 
 6) Images
 

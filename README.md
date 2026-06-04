@@ -19,7 +19,7 @@ Turn Obsidian notes into Anki flashcards. Panda Zap extracts Q/A pairs from Mark
 |---|---|
 | **Q/A Extraction** | Simple, configurable labels (`Q:` / `A:`). Bold/italic around labels is stripped automatically. |
 | **Preview before sync** | See exactly what will be added, updated, or removed. |
-| **Deck targeting** | Global default deck, note‑based (`folder::NoteName`), or per‑note override via `Deck::my/deck`. |
+| **Deck targeting** | Per‑note `Deck::my/deck` override > folder‑based (`folder::NoteName`) > global default deck. |
 | **Basic card model** | Creates and updates Basic (Front / Back) notes. Works with any model exposing `Front` and `Back`. |
 | **Connection test** | Quick status check in the sync dialog. |
 
@@ -61,7 +61,8 @@ Turn Obsidian notes into Anki flashcards. Panda Zap extracts Q/A pairs from Mark
 | Single‑line | `Q: question A: answer` |
 | Images | `I: [[image.png]]` or `I: ![Alt](image.png)` - attached to the Answer field. |
 | Formatting | Bold/italic around labels (`*Q:*`, `_A:_`) is stripped. |
-| Deck override | `Deck::my/deck` on the first line (slashes → Anki's `::`). |
+| Multi‑line | Bullet lists, tables, steps - any content after `Q:` is the answer. |
+| Deck override | `Deck::my/deck` on the first line - highest priority. Overrides folder‑based naming and the default deck. Slashes → Anki `::`. |
 
 > Avoid Q/A inside fenced code blocks or YAML frontmatter.
 
@@ -74,7 +75,7 @@ More examples: [`docs/writing-cards.md`](docs/writing-cards.md)
 1. Plugin extracts Q/A pairs from the active note.
 2. It analyses existing Anki notes to decide what to add, update, or remove.
 3. Preview all changes in a modal before syncing.
-4. With note‑based decks enabled, the plugin can detect removed cards and ask to delete them from Anki (with confirmation).
+4. The plugin detects cards that were removed from your note and asks to delete them from Anki (with confirmation).
 
 > Communication is via AnkiConnect's local HTTP API. Keep Anki open.
 
@@ -87,7 +88,7 @@ More examples: [`docs/writing-cards.md`](docs/writing-cards.md)
 | Anki Connect URL | `http://127.0.0.1` | |
 | Anki Connect Port | `8765` | |
 | Default Deck | - | Global fallback |
-| Note‑based Decks | off | Mirrors `folder::NoteName` |
+| Note‑based Decks | off | Derives deck from `folder/NoteName.md` |
 | Deck Override Word | `Deck` | First‑line prefix |
 | Question Word | `Q` | |
 | Answer Word | `A` | |

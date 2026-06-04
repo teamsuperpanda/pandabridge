@@ -20,14 +20,14 @@ Thank you for your interest in contributing! Here's how to get started.
 
 - Follow the existing patterns in the codebase.
 - Use Obsidian API best practices where applicable (e.g., `instanceOf()` for cross-window safety, `createSpan()`/`createDiv()` over `createEl('span')`/`createEl('div')`).
-- Avoid `!important` in CSS — use increased selector specificity instead.
+- Avoid `!important` in CSS - use increased selector specificity instead.
 - No `console.log` in production code.
 
 ## Pull Request Process
 
 1. Ensure your branch is up to date with `main`.
 2. Run the full test suite and lint checks.
-3. Keep PRs focused — one feature or fix per PR.
+3. Keep PRs focused - one feature or fix per PR.
 4. Write a clear PR description explaining what and why.
 
 ## Project Structure

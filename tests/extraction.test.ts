@@ -66,6 +66,59 @@ It was created by Facebook`;
 
   it('should return empty array for invalid input', () => {
     expect(extractQACardsFromText('No Q&A here', defaultSettings)).toEqual([]);
-    expect(extractQACardsFromText('Q: Question but no answer', defaultSettings)).toEqual([]);
+    expect(extractQACardsFromText('Q: just a question with nothing after', defaultSettings)).toEqual([]);
+  });
+
+  it('should capture bullet points after Q: without explicit A:', () => {
+    const content = `Q: What are the types of fruit?
+- Apple
+- Banana
+- Orange`;
+
+    const cards = extractQACardsFromText(content, defaultSettings);
+
+    expect(cards).toHaveLength(1);
+    expect(cards[0].question).toBe('What are the types of fruit?');
+    expect(cards[0].answer).toBe('- Apple\n- Banana\n- Orange');
+  });
+
+  it('should capture tables after Q: without explicit A:', () => {
+    const content = `Q: Conversion rates
+| From | To | Rate |
+| --- | --- | --- |
+| USD | EUR | 0.85 |
+| EUR | USD | 1.18 |`;
+
+    const cards = extractQACardsFromText(content, defaultSettings);
+
+    expect(cards).toHaveLength(1);
+    expect(cards[0].question).toBe('Conversion rates');
+    expect(cards[0].answer).toBe('| From | To | Rate |\n| --- | --- | --- |\n| USD | EUR | 0.85 |\n| EUR | USD | 1.18 |');
+  });
+
+  it('should handle bullet points with explicit A: on same Q: line', () => {
+    const content = `Q: Key features? A:
+- Fast
+- Reliable
+- Scalable`;
+
+    const cards = extractQACardsFromText(content, defaultSettings);
+
+    expect(cards).toHaveLength(1);
+    expect(cards[0].question).toBe('Key features?');
+    expect(cards[0].answer).toBe('- Fast\n- Reliable\n- Scalable');
+  });
+
+  it('should capture mixed content after Q: as answer', () => {
+    const content = `Q: Steps to deploy
+1. Build the app
+2. Run tests
+3. Deploy to server`;
+
+    const cards = extractQACardsFromText(content, defaultSettings);
+
+    expect(cards).toHaveLength(1);
+    expect(cards[0].question).toBe('Steps to deploy');
+    expect(cards[0].answer).toBe('1. Build the app\n2. Run tests\n3. Deploy to server');
   });
 });
