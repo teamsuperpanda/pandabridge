@@ -19,7 +19,7 @@ Turn Obsidian notes into Anki flashcards. Panda Zap extracts Q/A pairs from Mark
 |---|---|
 | **Q/A Extraction** | Simple, configurable labels (`Q:` / `A:`). Bold/italic around labels is stripped automatically. |
 | **Preview before sync** | See exactly what will be added, updated, or removed. |
-| **Deck targeting** | Per‑note `Deck::my/deck` override > folder‑based (`folder::NoteName`) > global default deck. |
+| **Deck targeting** | Per‑note `Deck::my/deck` override > folder‑based (`folder::NoteName`) > global default deck. Multiple files can share the same deck - cards merge safely. |
 | **Basic card model** | Creates and updates Basic (Front / Back) notes. Works with any model exposing `Front` and `Back`. |
 | **Connection test** | Quick status check in the sync dialog. |
 
@@ -75,7 +75,7 @@ More examples: [`docs/writing-cards.md`](docs/writing-cards.md)
 1. Plugin extracts Q/A pairs from the active note.
 2. It analyses existing Anki notes to decide what to add, update, or remove.
 3. Preview all changes in a modal before syncing.
-4. The plugin detects cards that were removed from your note and asks to delete them from Anki (with confirmation).
+4. The plugin detects cards that were removed from your note and asks to delete them from Anki (with confirmation). Deletions are scoped per‑file: cards from other notes in the same deck are never touched.
 
 > Communication is via AnkiConnect's local HTTP API. Keep Anki open.
 

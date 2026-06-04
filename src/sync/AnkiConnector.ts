@@ -17,6 +17,8 @@ import {
   getImageFilename,
 } from './imageUtils';
 
+const SOURCE_TAG_PREFIX = 'source:';
+
 export class AnkiConnector {
   private settings: PandaZapSettings;
   private app: App;
@@ -161,8 +163,9 @@ export class AnkiConnector {
     // but are no longer present in the current note and mark them for deletion.
     try {
       if (this.settings.useNoteBased && notePath) {
-        // Find notes in the target deck that have the plugin tag
-        const query = `deck:"${deckName}" tag:${PLUGIN_TAG}`;
+        // Find notes in the target deck that have the plugin tag and came from this source file
+        const sourceTag = this.getSourceTag(notePath);
+        const query = `deck:"${deckName}" tag:${PLUGIN_TAG}${sourceTag ? ` tag:${sourceTag}` : ''}`;
         const existingNoteIds = (await this.ankiConnectRequest(
           'findNotes',
           ANKI_CONNECT_VERSION,
@@ -284,7 +287,7 @@ export class AnkiConnector {
             }
           }
 
-          const updateStatus = await this.updateExistingCard(card, deckName, finalBack);
+          const updateStatus = await this.updateExistingCard(card, deckName, finalBack, notePath);
 
           if (updateStatus.status === 'updated') {
             results.push(`🔄 Updated: ${card.question} → ${deckName}`);
@@ -301,7 +304,7 @@ export class AnkiConnector {
                     Front: card.question,
                     Back: finalBack,
                   },
-                  tags: ['panda-zap', 'obsidian'],
+                  tags: ['panda-zap', 'obsidian', ...(notePath ? [this.getSourceTag(notePath)] : [])],
                 },
               });
               results.push(`✅ Added: ${card.question} → ${deckName}`);
@@ -347,7 +350,8 @@ export class AnkiConnector {
   private async updateExistingCard(
     card: AnkiCard,
     deckName: string,
-    backContentOverride?: string
+    backContentOverride?: string,
+    notePath?: string
   ): Promise<{ status: 'updated' | 'identical' | 'missing' }> {
     try {
       // Use cached notes when available to avoid extra network calls
@@ -419,6 +423,21 @@ export class AnkiConnector {
             },
           },
         });
+        // Ensure the note carries its source tag for correct deletion scoping
+        if (notePath && cached?.raw?.tags) {
+          const sourceTag = this.getSourceTag(notePath);
+          if (!cached.raw.tags.includes(sourceTag)) {
+            try {
+              const allTags = [...new Set([...(cached.raw.tags ?? []), sourceTag])];
+              await this.ankiConnectRequest('updateNoteTags', 6, {
+                note: parseInt(noteId, 10),
+                tags: allTags,
+              });
+            } catch {
+              // non-fatal
+            }
+          }
+        }
         // Invalidate cache if present since we changed a note
         this.noteCache = null;
         return { status: 'updated' };
@@ -541,6 +560,22 @@ export class AnkiConnector {
 
     return this.getDeckNameFromPath(notePath);
   }
+  private getSourceTag(notePath: string): string {
+    const s = notePath.replace(/[/\\]/g, '_').replace(/[\s,]+/g, '_');
+    const prefix = SOURCE_TAG_PREFIX;
+    const maxLen = 80;
+    const tag = `${prefix}${s}`;
+    if (tag.length <= maxLen) return tag;
+    let hash = 0;
+    for (let i = 0; i < s.length; i++) {
+      hash = ((hash << 5) - hash) + s.charCodeAt(i);
+      hash |= 0;
+    }
+    const hashStr = Math.abs(hash).toString(36);
+    const keepLen = maxLen - prefix.length - hashStr.length - 1;
+    return `${prefix}${s.slice(0, keepLen)}_${hashStr}`;
+  }
+
   private buildAnkiConnectUrl(): string {
     // Normalize URL + port. settings.ankiConnectUrl may include protocol and/or port.
     try {
