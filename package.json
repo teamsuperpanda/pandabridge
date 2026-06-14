@@ -26,7 +26,7 @@
     "@typescript-eslint/parser": "^8.53.0",
     "@vitest/coverage-v8": "^4.1.7",
     "esbuild": "^0.28.1",
-    "eslint": "^10.0.3",
+    "eslint": "^10.5.0",
     "eslint-plugin-obsidianmd": "^0.1.9",
     "obsidian": "^1.12.3",
     "prettier": "^3.8.3",
