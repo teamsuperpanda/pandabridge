@@ -1,4 +1,4 @@
-import { Plugin, MarkdownView, TFile } from 'obsidian';
+import { Plugin, MarkdownView, TFile, Notice } from 'obsidian';
 import { SyncModal } from './dialogs/SyncModal';
 import { PandaZapSettingTab } from './dialogs/SettingsTab';
 import { AnkiConnector } from './sync/AnkiConnector';
@@ -48,6 +48,15 @@ export default class PandaZapPlugin extends Plugin {
       },
     });
 
+    this.addCommand({
+      id: 'sync-all-notes',
+      name: 'Sync all notes to Anki',
+      callback: () => {
+        const paths = this.app.vault.getMarkdownFiles().map((f) => f.path);
+        void this.openBatchSyncDialog(paths);
+      },
+    });
+
     this.addSettingTab(new PandaZapSettingTab(this.app, this));
 
     this.registerMarkdownPostProcessor((element, _context) => {
@@ -62,7 +71,7 @@ export default class PandaZapPlugin extends Plugin {
   async openBatchSyncDialog(notePaths: string[]): Promise<void> {
     const bContext = await this.captureBatchSyncContext(notePaths);
     if (bContext.contexts.size === 0) {
-      new (await import('obsidian')).Notice('No markdown notes with cards found');
+      new Notice('No markdown notes with cards found');
       return;
     }
     new SyncModal(this.app, this, bContext).open();
@@ -102,7 +111,7 @@ export default class PandaZapPlugin extends Plugin {
     if (paths.length > 0) {
       await this.openBatchSyncDialog(paths);
     } else {
-      new (await import('obsidian')).Notice('No files selected in file explorer');
+      new Notice('No files selected in file explorer');
     }
   }
 
@@ -143,20 +152,29 @@ export default class PandaZapPlugin extends Plugin {
   }
 
   async captureBatchSyncContext(notePaths: string[]): Promise<BatchSyncContext> {
+    const captured = await Promise.all(
+      notePaths.map(async (path) => {
+        const file = this.app.vault.getAbstractFileByPath(path);
+        if (!(file instanceof TFile)) return null;
+        const content = await this.app.vault.read(file);
+        const cards = extractQACardsFromText(content, this.settings);
+        return cards.length > 0 ? createSyncContext(cards, path, content) : null;
+      })
+    );
     const contexts = new Map<string, SyncContext>();
-    for (const path of notePaths) {
-      const file = this.app.vault.getAbstractFileByPath(path);
-      if (!(file instanceof TFile)) continue;
-      const content = await this.app.vault.read(file);
-      const cards = extractQACardsFromText(content, this.settings);
-      if (cards.length === 0) continue;
-      contexts.set(path, createSyncContext(cards, path, content));
-    }
+    captured.forEach((context, i) => {
+      if (context) contexts.set(notePaths[i], context);
+    });
     return createBatchSyncContext(contexts);
   }
 
   async analyzeBatchSyncOperation(bContext: BatchSyncContext): Promise<SyncAnalysis> {
     this.ankiConnector.updateSettings(this.settings);
+    if (!(await this.ankiConnector.testConnection())) {
+      throw new Error(
+        'Cannot connect to Anki Connect. Make sure Anki is running with AnkiConnect addon installed.'
+      );
+    }
     const allCardsToAdd: CardSyncInfo[] = [];
     const allCardsToUpdate: CardSyncInfo[] = [];
     const allCardsToDelete: CardSyncInfo[] = [];
@@ -164,9 +182,10 @@ export default class PandaZapPlugin extends Plugin {
 
     for (const [notePath, context] of bContext.contexts) {
       const analysis = await this.ankiConnector.analyzeSyncOperation(
-        [...context.cards],
+        context.cards,
         context.notePath,
-        context.noteContent
+        context.noteContent,
+        true
       );
       totalCards += analysis.totalCards;
       const tag = (items: CardSyncInfo[]) =>
@@ -181,7 +200,12 @@ export default class PandaZapPlugin extends Plugin {
       allCardsToDelete.push(...analysis.cardsToDelete);
     }
 
-    return { cardsToAdd: allCardsToAdd, cardsToUpdate: allCardsToUpdate, cardsToDelete: allCardsToDelete, totalCards };
+    return {
+      cardsToAdd: allCardsToAdd,
+      cardsToUpdate: allCardsToUpdate,
+      cardsToDelete: allCardsToDelete,
+      totalCards,
+    };
   }
 
   async syncBatchCards(
@@ -191,16 +215,22 @@ export default class PandaZapPlugin extends Plugin {
     confirmedDeletionIdsByNote?: ReadonlyMap<string, readonly string[]>
   ): Promise<string[]> {
     this.ankiConnector.updateSettings(this.settings);
+    if (!(await this.ankiConnector.testConnection())) {
+      throw new Error(
+        'Cannot connect to Anki Connect. Make sure Anki is running with AnkiConnect addon installed.'
+      );
+    }
     const results: string[] = [];
 
     for (const [notePath, context] of bContext.contexts) {
       const noteResults = await this.ankiConnector.syncCards(
-        [...context.cards],
+        context.cards,
         preview,
         notePath,
         context.noteContent,
         deleteConfirmed,
-        confirmedDeletionIdsByNote?.get(notePath)
+        confirmedDeletionIdsByNote?.get(notePath),
+        true
       );
       results.push(...noteResults);
     }
@@ -213,20 +243,17 @@ export default class PandaZapPlugin extends Plugin {
 
     const syncContext = context ?? this.captureSyncContext();
     return this.ankiConnector.analyzeSyncOperation(
-      syncContext.cards.map((card) => ({ ...card })),
+      syncContext.cards,
       syncContext.notePath,
       syncContext.noteContent
     );
   }
 
   extractCardsFromCurrentNote(): AnkiCard[] {
-    // Recreate extractor to pick up any settings changes
-    this.cardExtractor = new CardExtractor(this.app, this.settings);
     return this.cardExtractor.extractCardsFromCurrentNote();
   }
 
   async syncCardsToAnki(
-    cards: AnkiCard[],
     preview: boolean = false,
     deleteConfirmed: boolean = false,
     context?: SyncContext,
@@ -234,9 +261,8 @@ export default class PandaZapPlugin extends Plugin {
   ): Promise<string[]> {
     this.ankiConnector.updateSettings(this.settings);
     const syncContext = context ?? this.captureSyncContext();
-    const syncCards = context ? syncContext.cards.map((card) => ({ ...card })) : cards;
     return this.ankiConnector.syncCards(
-      syncCards,
+      syncContext.cards,
       preview,
       syncContext.notePath,
       syncContext.noteContent,
