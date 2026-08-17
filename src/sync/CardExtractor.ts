@@ -32,20 +32,19 @@ export class CardExtractor {
 
   processQACards(element: HTMLElement, plugin?: PandaZapPlugin) {
     const containers = element.querySelectorAll('p, div, span, li');
+    const rx = buildMarkerRegexes(plugin?.settings ?? this.settings);
 
     containers.forEach((container) => {
-      if (!container.instanceOf(HTMLElement) || container.classList.contains('panda-zap-qa-processed')) {
+      if (
+        !container.instanceOf(HTMLElement) ||
+        container.classList.contains('panda-zap-qa-processed')
+      ) {
         return;
       }
 
       const fullText = container.textContent || '';
-      const rx = buildMarkerRegexes(plugin?.settings ?? this.settings);
 
-      if (
-        !rx.qLabel.test(fullText) &&
-        !rx.aLabel.test(fullText) &&
-        !rx.iLabel.test(fullText)
-      ) {
+      if (!rx.qLabel.test(fullText) && !rx.aLabel.test(fullText) && !rx.iLabel.test(fullText)) {
         return;
       }
 
@@ -56,8 +55,9 @@ export class CardExtractor {
       let node = walker.nextNode();
       while (node) {
         const textNode = node as Text;
-        if (!(textNode.parentElement?.closest('code, pre'))) {
+        if (!textNode.parentElement?.closest('code, pre')) {
           const t = textNode.nodeValue ?? '';
+          rx.qaTextNode.lastIndex = 0;
           if (rx.qaTextNode.test(t)) {
             toUpdate.push(textNode);
           }
@@ -117,11 +117,7 @@ export class CardExtractor {
           tn.replaceWith(frag);
           changed = true;
           let el = parent?.instanceOf(HTMLElement) ? parent : null;
-          while (
-            el &&
-            el.childNodes.length === 0 &&
-            !['P', 'DIV', 'LI'].includes(el.tagName)
-          ) {
+          while (el && el.childNodes.length === 0 && !['P', 'DIV', 'LI'].includes(el.tagName)) {
             const next = el.parentNode?.instanceOf(HTMLElement) ? el.parentNode : null;
             el.remove();
             el = next;
